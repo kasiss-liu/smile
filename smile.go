@@ -1,6 +1,8 @@
 package smile
 
 import (
+	"compress/gzip"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -27,6 +29,7 @@ type Engine struct {
 	wsEngine      IEngine
 	RunHandle     RunMonitor
 	Logger        ILogger
+	Gzip          bool
 	//logger debug
 }
 
@@ -35,6 +38,7 @@ func Default() *Engine {
 		dynamicEngine: &DynamicEngine{},
 		wsEngine:      &WsEngine{},
 		Logger:        &Logger{os.Stdout, true},
+		Gzip:          false,
 	}
 }
 func NewEngine(fileDir string) *Engine {
@@ -54,14 +58,19 @@ func NewEngine(fileDir string) *Engine {
 //有请求的时候 把请求处理以后 储存到结构中
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	combine := InitCombination(w, r)
-	if e.initactEngine(combine) {
+	gz := gzip.NewWriter(w)
+	defer gz.Close()
+
+	combine := InitCombination(w, r, e, gz)
+
+	if e.initActEngine(combine) {
 		if monitorSwitch && e.RunHandle != nil {
 			e.RunHandle.HandleStart(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
 		}
 		err := e.actEngine.Handle()
 		if err != nil {
 			//debug
+			fmt.Println("[debug] " + err.Error())
 		}
 		if monitorSwitch && e.RunHandle != nil {
 			e.RunHandle.HandleEnd(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
@@ -75,7 +84,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e.Logger.Log(combine)
 	}
 }
-func (e *Engine) initactEngine(c *Combination) bool {
+func (e *Engine) initActEngine(c *Combination) bool {
 
 	if e.fileEngine != nil {
 		e.fileEngine.Init(c)
@@ -116,6 +125,9 @@ func (e *Engine) SetLoger(l ILogger) {
 }
 func (e *Engine) SetRouteGroup(r *RouteGroup) {
 	e.RouteGroup = r
+}
+func (e *Engine) GzipOn() {
+	e.Gzip = true
 }
 
 func (e *Engine) Run(port string) {

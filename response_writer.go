@@ -2,6 +2,7 @@ package smile
 
 import (
 	"bufio"
+	"compress/gzip"
 	"io"
 	"net"
 	"net/http"
@@ -25,6 +26,8 @@ type ResponseWriter interface {
 
 type responseWriter struct {
 	http.ResponseWriter
+	io.Writer
+	gz     bool
 	status int
 	size   int
 }
@@ -33,6 +36,11 @@ func (w *responseWriter) Init(writer http.ResponseWriter) {
 	w.size = defaultDataSize
 	w.status = isWritten
 	w.ResponseWriter = writer
+}
+
+func (w *responseWriter) GzOn(gz *gzip.Writer) {
+	w.Writer = gz
+	w.gz = true
 }
 
 func (w *responseWriter) DataSize() int {
@@ -64,14 +72,18 @@ func (w *responseWriter) WriteHeaderAtOnce() {
 
 func (w *responseWriter) Write(data []byte) (n int, err error) {
 	w.WriteHeaderAtOnce()
-	n, err = w.ResponseWriter.Write(data)
+	if w.gz {
+		n, err = w.Writer.Write(data)
+	} else {
+		n, err = w.ResponseWriter.Write(data)
+	}
 	w.size += n
 	return
 }
 
 func (w *responseWriter) WriteString(data string) (n int, err error) {
 	w.WriteHeaderAtOnce()
-	n, err = io.WriteString(w.ResponseWriter, data)
+	w.Write([]byte(data))
 	w.size += n
 	return
 }

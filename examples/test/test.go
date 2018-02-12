@@ -10,10 +10,10 @@ import (
 type monitor struct{}
 
 func (m *monitor) HandleStart(c *smile.MonitorInfo) {
-	fmt.Println("func start")
+	//	fmt.Println("func start")
 }
 func (m *monitor) HandleEnd(c *smile.MonitorInfo) {
-	fmt.Println("func end")
+	//	fmt.Println("func end")
 }
 
 //实现一个测试路由方法
@@ -37,6 +37,6 @@ func main() {
 	//注册监视器
 	smile.MonitorOn()
 	engine.SetMonitor(m)
-
+	engine.GzipOn()
 	engine.Run(":8000")
 }

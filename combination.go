@@ -1,6 +1,7 @@
 package smile
 
 import (
+	"compress/gzip"
 	"io/ioutil"
 	"mime/multipart"
 	"net"
@@ -17,10 +18,18 @@ const (
 	MaxFileSize = 1 << 20
 )
 
-func InitCombination(w http.ResponseWriter, r *http.Request) *Combination {
+func InitCombination(w http.ResponseWriter, r *http.Request, e *Engine, gz *gzip.Writer) *Combination {
 
 	writer := &responseWriter{}
+
 	writer.Init(w)
+	if e.Gzip && strings.Contains(strings.ToLower(r.Header.Get("Accept-Encoding")), "gzip") {
+		//设置响应头 告知浏览器本次请求为gzip压缩
+		writer.Header().Set("Content-Encoding", "gzip")
+		//非常重要 如果不设置此头 浏览器将不解析gzip
+		writer.Header().Set("Transfer-Encoding", "chunked")
+		writer.GzOn(gz)
+	}
 
 	r.ParseForm()
 	r.ParseMultipartForm(MaxFileSize)
