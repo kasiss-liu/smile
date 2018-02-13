@@ -1,3 +1,6 @@
+//This software is licensed under the MIT License.
+//You can get more info in license file.
+
 package smile
 
 import (
@@ -6,11 +9,13 @@ import (
 	"time"
 )
 
+//日志处理
 type ILogger interface {
 	Write(io.Writer, string)
 	Log(*Combination)
 }
 
+//注册基本的terminal颜色
 var (
 	green       = string([]byte{27, 91, 57, 55, 59, 52, 50, 109})
 	white       = string([]byte{27, 91, 57, 48, 59, 52, 55, 109})
@@ -23,12 +28,15 @@ var (
 	enableColor = true
 )
 
+//预定义几种日志前缀
 var (
 	infoprefix    = "[INFO]"
 	warningprefix = "[WARNING]"
 	errorprefix   = "[ERROR]"
+	logprefix     = "[LOG]"
 )
 
+//实现一个日志结构
 type Logger struct {
 	Writer io.Writer
 	isTerm bool
@@ -36,26 +44,33 @@ type Logger struct {
 
 var _ ILogger = &Logger{}
 
+//logger写方法 向一个io内写入数据
 func (l *Logger) Write(w io.Writer, s string) {
 	fmt.Fprintln(w, s)
 }
+
+//Log方法
+//整理需要log的数据拼接后进行输出
 func (l *Logger) Log(c *Combination) {
-	prefix := "LOG"
-	statusCode := c.ResponseWriter.Status()
-	statusColor := colorForStatus(statusCode)
-	method := c.GetMethod()
-	methodColor := colorForMethod(method)
-	clientIP := c.GetClientIP()
-	path := c.GetPath()
+	prefix := logprefix                       //日志前缀
+	statusCode := c.ResponseWriter.Status()   //请求响应状态
+	statusColor := colorForStatus(statusCode) //状态打印颜色
+	method := c.GetMethod()                   //请求方法
+	methodColor := colorForMethod(method)     //方法打印颜色
+	clientIP := c.GetClientIP()               //客户端ip
+	path := c.GetPath()                       //请求路由
 	//如果不是终端 则不输出颜色
 	if !l.isTerm {
 		statusColor = ""
 		methodColor = ""
 	}
+	//将准备的数据进行拼接
 	s := l.joinLog(prefix, path, statusCode, statusColor, clientIP, method, methodColor)
+	//数据写入
 	l.Write(l.Writer, s)
 }
 
+//拼接日志字符串
 //[LOG]2018/02/07-18:19:20 GET /test Status 200 IP 127.0.0.1
 //[%s] %v |%s %3d %s| %15s |%s %-7s %s %s\n,
 func (l *Logger) joinLog(prefix string, path string, statusCode int, statusColor string, clientIP string, method string, methodColor string) string {
@@ -70,6 +85,7 @@ func (l *Logger) joinLog(prefix string, path string, statusCode int, statusColor
 	return s
 }
 
+//根据不同的状态获取颜色
 func colorForStatus(status int) string {
 	switch {
 	case status >= 200 && status < 300:
@@ -84,6 +100,7 @@ func colorForStatus(status int) string {
 	}
 }
 
+//根据不同的方法获取颜色
 func colorForMethod(method string) string {
 	switch method {
 	case "POST":
