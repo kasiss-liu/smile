@@ -1,0 +1,37 @@
+<!Doctype html>
+<html>
+<head>
+
+</head>
+
+<body>
+<h1>Hello World !</h1>
+
+
+</body>
+
+<script type="text/javascript">
+ws = new WebSocket("ws://127.0.0.1:8000/ws");
+
+ws.onopen = function(evt) {
+	ws.send("hello golang ")
+}
+
+ws.onmessage = function(evt)
+
+{
+console.log("access data")
+  console.log(evt.data)
+};
+ws.onclose = function(evt)
+{
+  console.log("WebSocketClosed!");
+};
+ws.onerror = function(evt)
+{
+  console.log("WebSocketError!");
+};
+console.log(ws)
+</script>
+</html>
+</html>
