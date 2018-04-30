@@ -106,7 +106,6 @@ func (w *responseWriter) Write(data []byte) (n int, err error) {
 
 //直接写入字符串
 func (w *responseWriter) WriteString(data string) (n int, err error) {
-	w.WriteHeaderAtOnce()
 	w.Write([]byte(data))
 	w.size += n
 	return

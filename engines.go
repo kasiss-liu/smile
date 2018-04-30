@@ -100,6 +100,7 @@ var CONTENTTYPE = map[string]string{
 	"xyz":     "chemical/x-xyz",
 	"bmp":     "image/bmp",
 	"gif":     "image/gif",
+	"ico":     "image/x-icon",
 	"ief":     "image/ief",
 	"jpeg":    "image/jpeg",
 	"jpg":     "image/jpeg",
@@ -171,13 +172,19 @@ type FileEngine struct {
 	cb       *Combination //请求复合结构
 }
 
+const DEFAULT_FILE = "index.html"
+
 //文件引擎初始化
 //储存请求复合结构
 //处理请求文件地址
 //处理请求文件后缀
 func (f *FileEngine) Init(c *Combination) {
 	f.cb = c
-	f.FilePath = f.BaseDir + strings.Trim(c.GetPath(), "/")
+	filename := strings.Trim(c.GetPath(), "/")
+	if filename == "" {
+		filename = DEFAULT_FILE
+	}
+	f.FilePath = f.BaseDir + filename
 	f.FileExt = path.Ext(f.FilePath)
 }
 
@@ -211,6 +218,8 @@ func (f *FileEngine) FileExist() bool {
 	if err == nil && !file.IsDir() {
 		return true
 	}
+	//针对默认页面做校验
+
 	//不存在或者不是文件 返回false
 	return false
 }

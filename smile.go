@@ -40,7 +40,8 @@ func Default() *Engine {
 		dynamicEngine: &DynamicEngine{},
 		wsEngine:      &WsEngine{},
 		Logger:        &Logger{os.Stdout, true},
-		Gzip:          false,
+		Gzip:          true,
+		RouteGroup:    new(RouteGroup),
 	}
 }
 
@@ -150,6 +151,11 @@ func (e *Engine) SetRouteGroup(r *RouteGroup) {
 //开启Gzip
 func (e *Engine) GzipOn() {
 	e.Gzip = true
+}
+
+//关闭Gzip
+func (e *Engine) GzipOff() {
+	e.Gzip = false
 }
 
 //启动一个HttpServer
