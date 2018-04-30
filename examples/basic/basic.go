@@ -32,7 +32,7 @@ func main() {
 	engine := smile.Default()
 	//注册路由
 	routeGroup := smile.NewRouteGroup()
-	routeGroup.SetGET("test", test)
+	routeGroup.SetGET("", test)
 	engine.SetRouteGroup(routeGroup)
 	//注册监视器
 	smile.MonitorOn()

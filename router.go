@@ -5,16 +5,24 @@ package smile
 
 import (
 	"errors"
+	"reflect"
+	"regexp"
+	"strings"
 )
 
 //定一个业务执行方法
 type HandlerFunc func(*Combination) error
 
-//定义部分请求类型
+//定义部分请求类型及其匹配式
 const (
 	METHOD_GET  = "GET"
 	METHOD_POST = "POST"
 	METHOD_WS   = "WS"
+	regexp_Post = "(POST)|(Post)|"
+	regexp_Get  = "(GET)|(Get)|"
+	regexp_Ws   = "(WS)|(Ws)|"
+	regexp_Det  = "(DELETE)|(Delete)|"
+	regex_Put   = "(PUT)|(Put)|"
 )
 
 //路由列表
@@ -79,4 +87,62 @@ func NewRouteGroup() *RouteGroup {
 	r.POST = make(map[string]HandlerFunc, 10)
 	r.WS = make(map[string]HandlerFunc, 10)
 	return r
+}
+
+//填充路由基础方法
+func (rg *RouteGroup) FillRoutes(m string, prefix string, c interface{}) {
+	t := reflect.TypeOf(c)
+	v := reflect.ValueOf(c)
+	l := t.NumMethod()
+	for i := 0; i < l; i++ {
+		fnName := t.Method(i).Name
+		interf := v.Method(i).Interface()
+		if fn, ok := interf.(func(*Combination) error); ok {
+			//函数名称转化为请求路径path的全小写格式
+			path := strings.ToLower(strings.Trim(prefix+"/"+fnName, "/"))
+			switch m {
+			case "GET":
+				rg.SetGET(path, fn)
+			case "POST":
+				rg.SetPOST(path, fn)
+			case "WS":
+				rg.SetWS(path, fn)
+			default:
+			}
+		}
+	}
+}
+
+//前缀匹配规则 填充路由
+//暂时只支持GET、POST、WS
+
+func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
+	t := reflect.TypeOf(c)
+	v := reflect.ValueOf(c)
+	l := t.NumMethod()
+	reg, _ := regexp.Compile(`^(` + regexp_Post + regexp_Get + regexp_Ws + `).+`)
+	var m string
+	for i := 0; i < l; i++ {
+		fnName := t.Method(i).Name
+		interf := v.Method(i).Interface()
+		rexSubmatch := reg.FindStringSubmatch(fnName)
+		if len(rexSubmatch) > 0 {
+			m = strings.ToUpper(rexSubmatch[1])
+			//去掉函数名称中的方法类型
+			fnName = strings.Replace(fnName, rexSubmatch[1], "", -1)
+		}
+		if fn, ok := interf.(func(*Combination) error); ok {
+			//函数名称转化为请求路径path的全小写格式
+			path := strings.ToLower(strings.Trim(prefix+"/"+fnName, "/"))
+			switch m {
+			case "GET":
+				rg.SetGET(path, fn)
+			case "POST":
+				rg.SetPOST(path, fn)
+			case "WS":
+				rg.SetWS(path, fn)
+			default:
+			}
+		}
+	}
 }
