@@ -34,14 +34,17 @@ func TestFillRoutes(t *testing.T) {
 type testController struct{}
 
 func (t *testController) PostFunc(c *Combination) error {
+	c.WriteString("hello post")
 	return nil
 }
 
 func (t *testController) GetFunc(c *Combination) error {
+	c.WriteString("hello get")
 	return nil
 }
 
 func (t *testController) WsFunc(c *Combination) error {
+	c.WriteString("hello ws")
 	return nil
 }
 

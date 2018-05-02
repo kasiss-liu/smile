@@ -140,11 +140,17 @@ func (c *Combination) GetPostParam(key string) string {
 
 //根据键名从form-data类型中取值
 func (c *Combination) GetMultipartFormParam(key string) []string {
+	if c.Request.MultipartForm == nil {
+		return nil
+	}
 	return c.Request.MultipartForm.Value[key]
 }
 
 //根据键名冲form-data类型中取得上传文件
 func (c *Combination) GetMultipartFormFile(key string) []*multipart.FileHeader {
+	if c.Request.MultipartForm == nil {
+		return nil
+	}
 	return c.Request.MultipartForm.File[key]
 }
 

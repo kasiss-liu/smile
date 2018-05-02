@@ -114,6 +114,7 @@ func (w *responseWriter) WriteString(data string) (n int, err error) {
 //继承http.Hijacker的Hijack()方法
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
+
 }
 
 //继承http.flusher的Flush()方法
