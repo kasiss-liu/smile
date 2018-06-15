@@ -125,7 +125,7 @@ func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 		interf := v.Method(i).Interface()
 		if fn, ok := interf.(func(*Combination) error); ok {
 			//函数名称转化为请求路径path的全小写格式
-			path := strings.ToLower(strings.Trim(prefix+"/"+fnName, "/"))
+			path := strings.Trim(prefix+"/"+fnName, "/")
 			switch method {
 			case METHOD_GET:
 				rg.SetGET(path, fn)
@@ -163,7 +163,7 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 		}
 		if fn, ok := interf.(func(*Combination) error); ok {
 			//函数名称转化为请求路径path的全小写格式
-			path := strings.ToLower(strings.Trim(prefix+"/"+fnName, "/"))
+			path := strings.Trim(prefix+"/"+fnName, "/")
 			switch method {
 			case METHOD_GET:
 				rg.SetGET(path, fn)
