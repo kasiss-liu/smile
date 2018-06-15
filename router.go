@@ -15,21 +15,25 @@ type HandlerFunc func(*Combination) error
 
 //定义部分请求类型及其匹配式
 const (
-	METHOD_GET  = "GET"
-	METHOD_POST = "POST"
-	METHOD_WS   = "WS"
-	regexp_Post = "(POST)|(Post)|"
-	regexp_Get  = "(GET)|(Get)|"
-	regexp_Ws   = "(WS)|(Ws)|"
-	regexp_Det  = "(DELETE)|(Delete)|"
-	regex_Put   = "(PUT)|(Put)|"
+	METHOD_GET    = "GET"
+	METHOD_POST   = "POST"
+	METHOD_WS     = "WS"
+	METHOD_PUT    = "PUT"
+	METHOD_DELETE = "DELETE"
+	regexp_Post   = "(POST)|(Post)|"
+	regexp_Get    = "(GET)|(Get)|"
+	regexp_Ws     = "(WS)|(Ws)|"
+	regexp_Det    = "(DELETE)|(Delete)|"
+	regexp_Put    = "(PUT)|(Put)|"
 )
 
 //路由列表
 type RouteGroup struct {
-	GET  map[string]HandlerFunc
-	POST map[string]HandlerFunc
-	WS   map[string]HandlerFunc
+	GET    map[string]HandlerFunc
+	POST   map[string]HandlerFunc
+	WS     map[string]HandlerFunc
+	PUT    map[string]HandlerFunc
+	DELETE map[string]HandlerFunc
 }
 
 //注册一个路由
@@ -41,6 +45,10 @@ func (rg *RouteGroup) Set(method string, path string, handler HandlerFunc) {
 		rg.POST[path] = handler
 	case METHOD_WS:
 		rg.WS[path] = handler
+	case METHOD_PUT:
+		rg.PUT[path] = handler
+	case METHOD_DELETE:
+		rg.DELETE[path] = handler
 	default:
 	}
 }
@@ -60,6 +68,14 @@ func (rg *RouteGroup) SetWS(path string, handler HandlerFunc) {
 	rg.Set(METHOD_WS, path, handler)
 }
 
+func (rg *RouteGroup) SetPUT(path string, handler HandlerFunc) {
+	rg.Set(METHOD_PUT, path, handler)
+}
+
+func (rg *RouteGroup) SetDEL(path string, handler HandlerFunc) {
+	rg.Set(METHOD_DELETE, path, handler)
+}
+
 //根据请求方法 获取一个注册的方法
 func (rg *RouteGroup) Get(method string, path string) (HandlerFunc, error) {
 	switch method {
@@ -75,6 +91,14 @@ func (rg *RouteGroup) Get(method string, path string) (HandlerFunc, error) {
 		if val, ok := rg.WS[path]; ok {
 			return val, nil
 		}
+	case METHOD_PUT:
+		if val, ok := rg.PUT[path]; ok {
+			return val, nil
+		}
+	case METHOD_DELETE:
+		if val, ok := rg.DELETE[path]; ok {
+			return val, nil
+		}
 	default:
 	}
 	return nil, errors.New("METHOD:" + method + " PATH:" + path + " DID NOT REGISTER YET")
@@ -86,11 +110,13 @@ func NewRouteGroup() *RouteGroup {
 	r.GET = make(map[string]HandlerFunc, 10)
 	r.POST = make(map[string]HandlerFunc, 10)
 	r.WS = make(map[string]HandlerFunc, 10)
+	r.PUT = make(map[string]HandlerFunc, 10)
+	r.DELETE = make(map[string]HandlerFunc, 10)
 	return r
 }
 
 //填充路由基础方法
-func (rg *RouteGroup) FillRoutes(m string, prefix string, c interface{}) {
+func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 	t := reflect.TypeOf(c)
 	v := reflect.ValueOf(c)
 	l := t.NumMethod()
@@ -100,13 +126,17 @@ func (rg *RouteGroup) FillRoutes(m string, prefix string, c interface{}) {
 		if fn, ok := interf.(func(*Combination) error); ok {
 			//函数名称转化为请求路径path的全小写格式
 			path := strings.ToLower(strings.Trim(prefix+"/"+fnName, "/"))
-			switch m {
-			case "GET":
+			switch method {
+			case METHOD_GET:
 				rg.SetGET(path, fn)
-			case "POST":
+			case METHOD_POST:
 				rg.SetPOST(path, fn)
-			case "WS":
+			case METHOD_WS:
 				rg.SetWS(path, fn)
+			case METHOD_PUT:
+				rg.SetPUT(path, fn)
+			case METHOD_DELETE:
+				rg.SetDEL(path, fn)
 			default:
 			}
 		}
@@ -115,32 +145,36 @@ func (rg *RouteGroup) FillRoutes(m string, prefix string, c interface{}) {
 
 //前缀匹配规则 填充路由
 //暂时只支持GET、POST、WS
-
+//将一个Controller结构下的方法按照方法名称注册到routeGroup中
 func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 	t := reflect.TypeOf(c)
 	v := reflect.ValueOf(c)
 	l := t.NumMethod()
 	reg, _ := regexp.Compile(`^(` + regexp_Post + regexp_Get + regexp_Ws + `).+`)
-	var m string
+	var method string
 	for i := 0; i < l; i++ {
 		fnName := t.Method(i).Name
 		interf := v.Method(i).Interface()
 		rexSubmatch := reg.FindStringSubmatch(fnName)
 		if len(rexSubmatch) > 0 {
-			m = strings.ToUpper(rexSubmatch[1])
+			method = strings.ToUpper(rexSubmatch[1])
 			//去掉函数名称中的方法类型
 			fnName = strings.Replace(fnName, rexSubmatch[1], "", -1)
 		}
 		if fn, ok := interf.(func(*Combination) error); ok {
 			//函数名称转化为请求路径path的全小写格式
 			path := strings.ToLower(strings.Trim(prefix+"/"+fnName, "/"))
-			switch m {
-			case "GET":
+			switch method {
+			case METHOD_GET:
 				rg.SetGET(path, fn)
-			case "POST":
+			case METHOD_POST:
 				rg.SetPOST(path, fn)
-			case "WS":
+			case METHOD_WS:
 				rg.SetWS(path, fn)
+			case METHOD_PUT:
+				rg.SetPUT(path, fn)
+			case METHOD_DELETE:
+				rg.SetDEL(path, fn)
 			default:
 			}
 		}
