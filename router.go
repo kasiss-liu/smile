@@ -23,8 +23,8 @@ const (
 	regexp_Post   = "(POST)|(Post)|"
 	regexp_Get    = "(GET)|(Get)|"
 	regexp_Ws     = "(WS)|(Ws)|"
-	regexp_Det    = "(DELETE)|(Delete)|"
 	regexp_Put    = "(PUT)|(Put)|"
+	regexp_Det    = "(DELETE)|(Delete)|"
 )
 
 const (
@@ -157,7 +157,7 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 	t := reflect.TypeOf(c)
 	v := reflect.ValueOf(c)
 	l := t.NumMethod()
-	reg, _ := regexp.Compile(`^(` + regexp_Post + regexp_Get + regexp_Ws + `).+`)
+	reg, _ := regexp.Compile(`^(` + regexp_Post + regexp_Get + regexp_Ws + regexp_Put + regexp_Det + `).+`)
 	var method string
 	for i := 0; i < l; i++ {
 		fnName := t.Method(i).Name
