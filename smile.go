@@ -4,7 +4,6 @@
 package smile
 
 import (
-	"compress/gzip"
 	"fmt"
 	"net/http"
 	"os"
@@ -64,42 +63,45 @@ func NewEngine(fileDir string) *Engine {
 
 //有请求的时候 把请求处理以后 储存到结构中
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//默认生成一个*gzip.Writer
-	//请求结束后关闭
-	gz := gzip.NewWriter(w)
-	defer gz.Close()
+
 	//初始化一个请求复合 包含了本次请求及响应的数据
-	combine := InitCombination(w, r, e, gz)
+	combine := InitCombination(w, r, e)
+
+	//如果监控开关打开 并且注册了方法
+	//则在请求业务方法前后调用注册的start 和end 方法
+	if monitorSwitch && e.RunHandle != nil {
+		e.RunHandle.HandleStart(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
+	}
+
+	var err error
 	//初始化使用引擎
 	if e.initActEngine(combine) {
-		//如果监控开关打开 并且注册了方法
-		//则在请求业务方法前后调用注册的start 和end 方法
-		if monitorSwitch && e.RunHandle != nil {
-			e.RunHandle.HandleStart(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
-		}
 		//业务处理方法调用
-		err := e.actEngine.Handle()
-		if err != nil {
-			//debug
-			fmt.Println("[debug] " + err.Error())
-		}
-		//监控结束方法
-		if monitorSwitch && e.RunHandle != nil {
-			e.RunHandle.HandleEnd(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
-		}
+		err = e.actEngine.Handle()
 	} else {
 		//当请求的路由不在注册列表中时
 		//如果注册了Route404修复方法 则调用Route404
 		if e.Rout404 != nil {
-			e.Rout404(combine)
+			err = e.Rout404(combine)
 		}
-
 	}
+
+	if err != nil {
+		//debug
+		fmt.Println("[debug] " + err.Error())
+	}
+
+	//监控结束方法
+	if monitorSwitch && e.RunHandle != nil {
+		e.RunHandle.HandleEnd(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
+	}
+
 	//如果已经注册了 并且日志开关开启
 	//则进行日志打印
 	if e.Logger != nil && logSwitch {
 		e.Logger.Log(combine)
 	}
+	combine.Close()
 }
 
 //匹配本次请求的处理引擎

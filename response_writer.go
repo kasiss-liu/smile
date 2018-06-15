@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	isWritten       = -1
 	defaultDataSize = 0
 	defaultStatus   = 200
 )
@@ -33,16 +32,18 @@ type ResponseWriter interface {
 type responseWriter struct {
 	http.ResponseWriter
 	io.Writer
-	gz     bool //是否开启gz
-	status int  //响应状态
-	size   int  //响应字节长度
+	gz      bool //是否开启gz
+	status  int  //响应状态
+	size    int  //响应字节长度
+	written bool
 }
 
 //初始化http.ResponseWriter 响应状态 响应数据长度
 func (w *responseWriter) Init(writer http.ResponseWriter) {
 	w.size = defaultDataSize
-	w.status = isWritten
+	w.status = defaultStatus
 	w.ResponseWriter = writer
+	w.written = false
 }
 
 //开启gz开关
@@ -66,16 +67,13 @@ func (w *responseWriter) Status() int {
 //写入响应状态到header
 func (w *responseWriter) WriteHeader(code int) {
 	if code != w.status && code > 0 {
-		if !w.isWritten() {
-			w.status = code
-		}
-
+		w.status = code
 	}
 }
 
 //判断是否已经设置过响应状态
 func (w *responseWriter) isWritten() bool {
-	return w.status != isWritten
+	return w.written
 }
 
 //如果在响应头没有设置的情况下
@@ -83,10 +81,14 @@ func (w *responseWriter) isWritten() bool {
 //并将writer的数据重置
 func (w *responseWriter) WriteHeaderAtOnce() {
 	if !w.isWritten() {
-		w.size = 0
-		w.status = defaultStatus
+		w.written = true
 		w.ResponseWriter.WriteHeader(w.status)
 	}
+
+}
+
+func (w *responseWriter) Gz() bool {
+	return w.gz
 }
 
 //响应结构的写方法

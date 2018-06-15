@@ -25,13 +25,17 @@ const (
 
 //初始化一个*Combination
 //解析url传参 解析form-data
-func InitCombination(w http.ResponseWriter, r *http.Request, e *Engine, gz *gzip.Writer) *Combination {
+func InitCombination(w http.ResponseWriter, r *http.Request, e *Engine) *Combination {
 
 	writer := &responseWriter{}
+
 	//初始化http.ResponseWriter
 	writer.Init(w)
 	//如果开启了Gzip 则设置响应的headers 并将writer的io.writer调整为gzwriter
 	if e.Gzip && strings.Contains(strings.ToLower(r.Header.Get("Accept-Encoding")), "gzip") {
+		//默认生成一个*gzip.Writer
+		//请求结束后关闭
+		gz := gzip.NewWriter(w)
 		//设置响应头 告知浏览器本次请求为gzip压缩
 		writer.Header().Set("Content-Encoding", "gzip")
 		//非常重要 如果不设置此头 浏览器将不解析gzip
@@ -167,4 +171,12 @@ func (c *Combination) SetCookie(cookie *http.Cookie) {
 //设置header
 func (c *Combination) SetHeader(key, value string) {
 	c.ResponseWriter.Header().Set(key, value)
+}
+
+//请求响应结束后的一些操作
+func (c *Combination) Close() {
+	//如果本次请求使用gzip压缩 则关闭资源
+	if c.ResponseWriter.(*responseWriter).Gz() {
+		c.ResponseWriter.(*responseWriter).Writer.(*gzip.Writer).Close()
+	}
 }
