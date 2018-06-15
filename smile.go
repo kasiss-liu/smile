@@ -30,6 +30,7 @@ type Engine struct {
 	RunHandle     RunMonitor
 	Logger        ILogger
 	Gzip          bool
+	Rout404       HandlerFunc //注册时 404调用
 	//debug
 }
 
@@ -87,9 +88,11 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			e.RunHandle.HandleEnd(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
 		}
 	} else {
-		//未初始化到路由的请求 写入一个404头
-		//debug
-		combine.WriteHeader(404)
+		//当请求的路由不在注册列表中时
+		//如果注册了Route404修复方法 则调用Route404
+		if e.Rout404 != nil {
+			e.Rout404(combine)
+		}
 
 	}
 	//如果已经注册了 并且日志开关开启
@@ -156,6 +159,11 @@ func (e *Engine) GzipOn() {
 //关闭Gzip
 func (e *Engine) GzipOff() {
 	e.Gzip = false
+}
+
+//注册404回调方法
+func (e *Engine) SetRout404(fn HandlerFunc) {
+	e.Rout404 = fn
 }
 
 //启动一个HttpServer
