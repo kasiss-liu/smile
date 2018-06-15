@@ -27,13 +27,19 @@ const (
 	regexp_Put    = "(PUT)|(Put)|"
 )
 
+const (
+	STYLE_HUMP    = "hump"
+	STYLE_CONNECT = "connector"
+)
+
 //路由列表
 type RouteGroup struct {
-	GET    map[string]HandlerFunc
-	POST   map[string]HandlerFunc
-	WS     map[string]HandlerFunc
-	PUT    map[string]HandlerFunc
-	DELETE map[string]HandlerFunc
+	GET       map[string]HandlerFunc
+	POST      map[string]HandlerFunc
+	WS        map[string]HandlerFunc
+	PUT       map[string]HandlerFunc
+	DELETE    map[string]HandlerFunc
+	pathStyle string //自动填充路由时 方法名称转化为路径后的风格
 }
 
 //注册一个路由
@@ -112,6 +118,7 @@ func NewRouteGroup() *RouteGroup {
 	r.WS = make(map[string]HandlerFunc, 10)
 	r.PUT = make(map[string]HandlerFunc, 10)
 	r.DELETE = make(map[string]HandlerFunc, 10)
+	r.SetPathStyleConnector()
 	return r
 }
 
@@ -124,7 +131,7 @@ func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 		fnName := t.Method(i).Name
 		interf := v.Method(i).Interface()
 		if fn, ok := interf.(func(*Combination) error); ok {
-			//函数名称转化为请求路径path的全小写格式
+			fnName = rg.transFnNameToPath(fnName)
 			path := strings.Trim(prefix+"/"+fnName, "/")
 			switch method {
 			case METHOD_GET:
@@ -163,6 +170,7 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 		}
 		if fn, ok := interf.(func(*Combination) error); ok {
 			//函数名称转化为请求路径path的全小写格式
+			fnName = rg.transFnNameToPath(fnName)
 			path := strings.Trim(prefix+"/"+fnName, "/")
 			switch method {
 			case METHOD_GET:
@@ -179,4 +187,25 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 			}
 		}
 	}
+}
+
+//设置路径风格为驼峰 即区分大小写
+func (rg *RouteGroup) SetPathStyleHump() {
+	rg.pathStyle = STYLE_HUMP
+}
+
+//设置路径风格为连字符格式 将驼峰转为连接符风格
+func (rg *RouteGroup) SetPathStyleConnector() {
+	rg.pathStyle = STYLE_CONNECT
+}
+
+//根据规则转化方法名称为路径
+func (rg *RouteGroup) transFnNameToPath(fnName string) string {
+	if rg.pathStyle == STYLE_CONNECT {
+		reg, _ := regexp.Compile(`[A-Z]+`)
+		fnName = reg.ReplaceAllStringFunc(fnName, func(str string) string {
+			return "-" + strings.ToLower(str)
+		})
+	}
+	return strings.Trim(fnName, "-")
 }
