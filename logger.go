@@ -49,11 +49,22 @@ func (l *Logger) Write(w io.Writer, s string) {
 	fmt.Fprintln(w, s)
 }
 
+//开启终端输出（数据染色）
+func (l *Logger) TermOn() {
+	l.isTerm = true
+}
+
+//关闭终端输出（数据染色取消）
+func (l *Logger) TermOff() {
+	l.isTerm = false
+}
+
 //Log方法
 //整理需要log的数据拼接后进行输出
 func (l *Logger) Log(c *Combination) {
-	prefix := logprefix                       //日志前缀
+
 	statusCode := c.ResponseWriter.Status()   //请求响应状态
+	prefix := prefixForStatus(statusCode)     //日志前缀
 	statusColor := colorForStatus(statusCode) //状态打印颜色
 	method := c.GetMethod()                   //请求方法
 	methodColor := colorForMethod(method)     //方法打印颜色
@@ -63,6 +74,7 @@ func (l *Logger) Log(c *Combination) {
 	if !l.isTerm {
 		statusColor = ""
 		methodColor = ""
+		reset = ""
 	}
 	//将准备的数据进行拼接
 	s := l.joinLog(prefix, path, statusCode, statusColor, clientIP, method, methodColor)
@@ -72,9 +84,9 @@ func (l *Logger) Log(c *Combination) {
 
 //拼接日志字符串
 //[LOG]2018/02/07-18:19:20 GET /test Status 200 IP 127.0.0.1
-//[%s] %v |%s %3d %s| %15s |%s %-7s %s %s\n,
+//[%s] %v |%s %3d %s| %15s |%s %-7s %s %s,
 func (l *Logger) joinLog(prefix string, path string, statusCode int, statusColor string, clientIP string, method string, methodColor string) string {
-	s := fmt.Sprintf("[SMILE %s]%v |%s %-7s %s| %s | code %s %3d %s|  ClientIP %s\n",
+	s := fmt.Sprintf("[SMILE %s]%v |%s %-7s %s| %s | code %s %3d %s|  ClientIP %s",
 		prefix,
 		time.Now().Format("2006/01/02 15:04:05"),
 		methodColor, method, reset,
@@ -83,6 +95,21 @@ func (l *Logger) joinLog(prefix string, path string, statusCode int, statusColor
 		clientIP,
 	)
 	return s
+}
+
+//根据不同的状态获取日志前缀
+func prefixForStatus(status int) string {
+	switch {
+	case status >= 200 && status < 300:
+		return logprefix
+	case status >= 300 && status < 400:
+		return infoprefix
+	case status >= 400 && status < 500:
+		return warningprefix
+	default:
+		return errorprefix
+
+	}
 }
 
 //根据不同的状态获取颜色
@@ -103,10 +130,14 @@ func colorForStatus(status int) string {
 //根据不同的方法获取颜色
 func colorForMethod(method string) string {
 	switch method {
-	case "POST":
+	case METHOD_POST:
 		return magenta
-	case "GET":
+	case METHOD_GET:
 		return yellow
+	case METHOD_PUT:
+		return blue
+	case METHOD_DELETE:
+		return red
 	default:
 		return white
 	}
