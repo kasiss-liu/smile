@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 	"time"
 )
 
@@ -63,7 +65,6 @@ func NewEngine(fileDir string) *Engine {
 
 //有请求的时候 把请求处理以后 储存到结构中
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	//初始化一个请求复合 包含了本次请求及响应的数据
 	combine := InitCombination(w, r, e)
 
@@ -75,9 +76,11 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	//初始化使用引擎
-	if e.initActEngine(combine) {
-		//业务处理方法调用
-		err = e.actEngine.Handle()
+	engine := e.initActEngine(combine)
+	if engine != nil {
+
+		engine.Handle()
+
 	} else {
 		//当请求的路由不在注册列表中时
 		//如果注册了Route404修复方法 则调用Route404
@@ -102,26 +105,43 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e.Logger.Log(combine)
 	}
 	combine.Close()
+
 }
 
 //匹配本次请求的处理引擎
-func (e *Engine) initActEngine(c *Combination) bool {
+func (e *Engine) initActEngine(c *Combination) IEngine {
 
 	if e.fileEngine != nil {
 		e.fileEngine.Init(c)
 		if e.fileEngine.Check(nil) {
-			e.actEngine = e.fileEngine
+
+			filename := strings.Trim(c.GetPath(), "/")
+			if filename == "" {
+				filename = DEFAULT_FILE
+			}
+			BaseDir := e.fileEngine.(*FileEngine).BaseDir
+			FilePath := BaseDir + filename
+
 			e.actType = ACT_TYPE_FILE
-			return true
+			return &FileEngine{
+				BaseDir:  BaseDir,
+				cb:       c,
+				FilePath: FilePath,
+				FileExt:  path.Ext(FilePath),
+			}
 		}
 		e.fileEngine.Reset()
 	}
 	if e.wsEngine != nil {
 		e.wsEngine.Init(c)
 		if e.wsEngine.Check(e.RouteGroup) {
-			e.actEngine = e.wsEngine
 			e.actType = ACT_TYPE_WS
-			return true
+			return &WsEngine{
+				cb:     c,
+				method: c.GetMethod(),
+				path:   strings.Trim(c.GetPath(), "/"),
+				handle: e.wsEngine.(*WsEngine).handle,
+			}
 		}
 		e.wsEngine.Reset()
 	}
@@ -129,13 +149,18 @@ func (e *Engine) initActEngine(c *Combination) bool {
 	if e.dynamicEngine != nil {
 		e.dynamicEngine.Init(c)
 		if e.dynamicEngine.Check(e.RouteGroup) {
-			e.actEngine = e.dynamicEngine
+
 			e.actType = c.GetMethod()
-			return true
+			return &DynamicEngine{
+				cb:     c,
+				method: c.GetMethod(),
+				path:   strings.Trim(c.GetPath(), "/"),
+				handle: e.dynamicEngine.(*DynamicEngine).handle,
+			}
 		}
 		e.dynamicEngine.Reset()
 	}
-	return false
+	return nil
 }
 
 //注册一个监控器

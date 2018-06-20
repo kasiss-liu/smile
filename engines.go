@@ -4,7 +4,6 @@
 package smile
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -200,13 +199,10 @@ func (f *FileEngine) Handle() (err error) {
 	}
 
 	//读取文件内容 发送到客户端
-	content, err := f.readFile()
-	if f.cb != nil {
-		f.cb.Write(content)
-	}
+	f.readFile()
 
 	//重置
-	f.Reset()
+	//	f.Reset()
 	if err != nil {
 		return err
 	}
@@ -233,18 +229,20 @@ func (f *FileEngine) Check(i interface{}) bool {
 }
 
 //读取文件内容
-func (f *FileEngine) readFile() ([]byte, error) {
+func (f *FileEngine) readFile() {
 	file, err := os.Open(f.FilePath)
 	if err != nil {
 		//如果文件存在 但打开文件失败 则返回error
-		return []byte{}, errors.New("[" + f.FilePath + "]" + err.Error())
+		return
 	}
+	defer file.Close()
 	//读取文件内容并返回
 	content, err := ioutil.ReadAll(file)
 	if err != nil {
-		return []byte{}, err
+		return
 	}
-	return content, nil
+
+	f.cb.Write(content)
 }
 
 //将引擎的文件路径、后缀名、请求数据清空
