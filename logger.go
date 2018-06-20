@@ -69,7 +69,7 @@ func (l *Logger) Log(c *Combination) {
 	method := c.GetMethod()                   //请求方法
 	methodColor := colorForMethod(method)     //方法打印颜色
 	clientIP := c.GetClientIP()               //客户端ip
-	path := c.GetPath()                       //请求路由
+	path := c.GetURL()                        //请求路由
 	//如果不是终端 则不输出颜色
 	if !l.isTerm {
 		statusColor = ""

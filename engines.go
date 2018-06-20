@@ -201,7 +201,10 @@ func (f *FileEngine) Handle() (err error) {
 
 	//读取文件内容 发送到客户端
 	content, err := f.readFile()
-	f.cb.Write(content)
+	if f.cb != nil {
+		f.cb.Write(content)
+	}
+
 	//重置
 	f.Reset()
 	if err != nil {

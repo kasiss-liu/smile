@@ -177,6 +177,8 @@ func (c *Combination) SetHeader(key, value string) {
 func (c *Combination) Close() {
 	//如果本次请求使用gzip压缩 则关闭资源
 	if c.ResponseWriter.(*responseWriter).Gz() {
-		c.ResponseWriter.(*responseWriter).Writer.(*gzip.Writer).Close()
+		if c.ResponseWriter.(*responseWriter).Writer.(*gzip.Writer) != nil {
+			c.ResponseWriter.(*responseWriter).Writer.(*gzip.Writer).Close()
+		}
 	}
 }
