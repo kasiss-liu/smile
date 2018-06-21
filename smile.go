@@ -7,24 +7,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
-	"strings"
 	"time"
-)
-
-//注册几种请求类型
-const (
-	ACT_TYPE_FILE = "FILE"
-	ACT_TYPE_WS   = "WS"
-	ACT_TYPE_GET  = "GET"
-	ACT_TYPE_POST = "POST"
 )
 
 //一个服务器引擎
 type Engine struct {
 	RouteGroup    *RouteGroup
-	actEngine     IEngine
-	actType       string
 	fileEngine    IEngine
 	dynamicEngine IEngine
 	wsEngine      IEngine
@@ -68,18 +56,25 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//初始化一个请求复合 包含了本次请求及响应的数据
 	combine := InitCombination(w, r, e)
 
+	//初始化使用引擎
+	engine := e.initActEngine(combine)
+
 	//如果监控开关打开 并且注册了方法
 	//则在请求业务方法前后调用注册的start 和end 方法
 	if monitorSwitch && e.RunHandle != nil {
-		e.RunHandle.HandleStart(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
+		e.RunHandle.HandleStart(&MonitorInfo{
+			time.Now(),
+			engine.GetType(),
+			combine.GetPath(),
+			combine,
+		})
 	}
 
 	var err error
-	//初始化使用引擎
-	engine := e.initActEngine(combine)
+
 	if engine != nil {
 
-		engine.Handle()
+		err = engine.Handle()
 
 	} else {
 		//当请求的路由不在注册列表中时
@@ -96,7 +91,12 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//监控结束方法
 	if monitorSwitch && e.RunHandle != nil {
-		e.RunHandle.HandleEnd(&MonitorInfo{time.Now(), e.actType, combine.GetPath(), combine})
+		e.RunHandle.HandleEnd(&MonitorInfo{
+			time.Now(),
+			engine.GetType(),
+			combine.GetPath(),
+			combine,
+		})
 	}
 
 	//如果已经注册了 并且日志开关开启
@@ -109,56 +109,26 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 //匹配本次请求的处理引擎
-func (e *Engine) initActEngine(c *Combination) IEngine {
+func (e *Engine) initActEngine(c *Combination) (threadEngine IEngine) {
 
 	if e.fileEngine != nil {
-		e.fileEngine.Init(c)
-		if e.fileEngine.Check(nil) {
-
-			filename := strings.Trim(c.GetPath(), "/")
-			if filename == "" {
-				filename = DEFAULT_FILE
-			}
-			BaseDir := e.fileEngine.(*FileEngine).BaseDir
-			FilePath := BaseDir + filename
-
-			e.actType = ACT_TYPE_FILE
-			return &FileEngine{
-				BaseDir:  BaseDir,
-				cb:       c,
-				FilePath: FilePath,
-				FileExt:  path.Ext(FilePath),
-			}
+		threadEngine = e.fileEngine.Init(c)
+		if threadEngine.Check(nil) {
+			return threadEngine
 		}
-		e.fileEngine.Reset()
 	}
 	if e.wsEngine != nil {
-		e.wsEngine.Init(c)
-		if e.wsEngine.Check(e.RouteGroup) {
-			e.actType = ACT_TYPE_WS
-			return &WsEngine{
-				cb:     c,
-				method: c.GetMethod(),
-				path:   strings.Trim(c.GetPath(), "/"),
-				handle: e.wsEngine.(*WsEngine).handle,
-			}
+		threadEngine = e.wsEngine.Init(c)
+		if threadEngine.Check(e.RouteGroup) {
+			return
 		}
-		e.wsEngine.Reset()
 	}
 
 	if e.dynamicEngine != nil {
-		e.dynamicEngine.Init(c)
-		if e.dynamicEngine.Check(e.RouteGroup) {
-
-			e.actType = c.GetMethod()
-			return &DynamicEngine{
-				cb:     c,
-				method: c.GetMethod(),
-				path:   strings.Trim(c.GetPath(), "/"),
-				handle: e.dynamicEngine.(*DynamicEngine).handle,
-			}
+		threadEngine = e.dynamicEngine.Init(c)
+		if threadEngine.Check(e.RouteGroup) {
+			return
 		}
-		e.dynamicEngine.Reset()
 	}
 	return nil
 }

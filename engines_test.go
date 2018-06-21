@@ -29,62 +29,56 @@ func testHandle(c *Combination) error {
 func TestFileEngine(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/websocket/index.html", nil)
-	c := InitCombination(w, r, Default(), nil)
+	c := InitCombination(w, r, Default())
 
 	e := &FileEngine{BaseDir: "./examples/"}
-	e.Init(c)
-	if e.Check(rg) {
-		err := e.Handle()
+	engine := e.Init(c)
+	if engine.Check(rg) {
+		err := engine.Handle()
 		if err != nil {
 			fmt.Println("fileErr:", err.Error())
 		} else {
 			fmt.Println("success")
 		}
 	} else {
-		fmt.Println("check:", e.Check(rg))
+		fmt.Println("check:", engine.Check(rg))
 	}
-	e.Reset()
 }
 
 func TestDynamicEngine(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/test", nil)
-	c := InitCombination(w, r, Default(), nil)
+	c := InitCombination(w, r, Default())
 
 	e := &DynamicEngine{}
-	e.Init(c)
-	if e.Check(rg) {
-		err := e.Handle()
+	engine := e.Init(c)
+	if engine.Check(rg) {
+		err := engine.Handle()
 		if err != nil {
 			fmt.Println("handleErr:", err.Error())
 		} else {
 			fmt.Println("success")
 		}
 	}
-
-	e.Reset()
-
 }
 
 func TestWsEngine(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("WS", "/test2", nil)
-	c := InitCombination(w, r, Default(), nil)
+	c := InitCombination(w, r, Default())
 
 	e := &WsEngine{}
-	e.Init(c)
-	if e.Check(rg) {
-		err := e.Handle()
+	engine := e.Init(c)
+	if engine.Check(rg) {
+		err := engine.Handle()
 		if err != nil {
 			fmt.Println("handleErr:", err.Error())
 		} else {
 			fmt.Println("success")
 		}
 	} else {
-		fmt.Println("checkERR:", e.Check(rg))
+		fmt.Println("checkERR:", engine.Check(rg))
 	}
-	e.Reset()
-
 }

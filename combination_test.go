@@ -34,7 +34,7 @@ func TestCombination(t *testing.T) {
 	})
 
 	e := Default()
-	c := InitCombination(w, r, e, gz)
+	c := InitCombination(w, r, e)
 
 	ip := c.GetClientIP()
 	fmt.Println("IP:", ip)

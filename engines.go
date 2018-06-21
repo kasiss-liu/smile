@@ -152,12 +152,19 @@ var CONTENTTYPE = map[string]string{
 	"ice":     "x-conference/x-cooltalk",
 }
 
+//注册几种请求类型
+const (
+	ACT_TYPE_FILE = "FILE"
+	ACT_TYPE_WS   = "WS"
+	ACT_TYPE_DN   = "DYNAMIC"
+)
+
 //一个引擎接口
 type IEngine interface {
-	Init(*Combination)      //初始化引擎
-	Handle() error          //执行方法
-	Check(interface{}) bool //判断是否属于引擎处理请求
-	Reset()                 //重置引擎数据
+	Init(*Combination) IEngine //初始化引擎
+	Handle() error             //执行方法
+	Check(interface{}) bool    //判断是否属于引擎处理请求
+	GetType() string           //获取引擎结构类型
 }
 
 var _ IEngine = &FileEngine{}
@@ -177,14 +184,21 @@ const DEFAULT_FILE = "index.html"
 //储存请求复合结构
 //处理请求文件地址
 //处理请求文件后缀
-func (f *FileEngine) Init(c *Combination) {
-	f.cb = c
+func (f *FileEngine) Init(c *Combination) IEngine {
+
 	filename := strings.Trim(c.GetPath(), "/")
 	if filename == "" {
 		filename = DEFAULT_FILE
 	}
-	f.FilePath = f.BaseDir + filename
-	f.FileExt = path.Ext(f.FilePath)
+	filePath := f.BaseDir + filename
+	fileExt := path.Ext(filePath)
+
+	return &FileEngine{
+		cb:       c,
+		FileExt:  fileExt,
+		FilePath: filePath,
+		BaseDir:  f.BaseDir,
+	}
 }
 
 //响应处理方法
@@ -197,12 +211,9 @@ func (f *FileEngine) Handle() (err error) {
 	} else {
 		f.cb.SetHeader("Content-Type", "text/plain")
 	}
-
 	//读取文件内容 发送到客户端
 	f.readFile()
 
-	//重置
-	//	f.Reset()
 	if err != nil {
 		return err
 	}
@@ -245,11 +256,9 @@ func (f *FileEngine) readFile() {
 	f.cb.Write(content)
 }
 
-//将引擎的文件路径、后缀名、请求数据清空
-func (f *FileEngine) Reset() {
-	f.FilePath = ""
-	f.FileExt = ""
-	f.cb = nil
+//获取引擎结构类型
+func (f *FileEngine) GetType() string {
+	return ACT_TYPE_FILE
 }
 
 //动态请求引擎
@@ -265,10 +274,17 @@ var _ IEngine = &DynamicEngine{}
 
 //引擎初始化
 //获取请求类型和请求路由 并保存
-func (d *DynamicEngine) Init(c *Combination) {
-	d.cb = c
-	d.method = c.GetMethod()
-	d.path = strings.Trim(c.GetPath(), "/")
+func (d *DynamicEngine) Init(c *Combination) IEngine {
+
+	method := c.GetMethod()
+	path := strings.Trim(c.GetPath(), "/")
+
+	return &DynamicEngine{
+		cb:     c,
+		method: method,
+		path:   path,
+	}
+
 }
 
 //在路由列表中判断 动态请求路由是否已经注册
@@ -287,19 +303,13 @@ func (d *DynamicEngine) Check(i interface{}) bool {
 
 //执行已经保存的业务方法
 //暂时不做错误返回处理
-func (d *DynamicEngine) Handle() (err error) {
-	d.handle(d.cb)
-	d.Reset()
-	return nil
+func (d *DynamicEngine) Handle() error {
+	return d.handle(d.cb)
 }
 
-//重置动态请求
-//将请求的类型、方法、路由全部重置
-func (d *DynamicEngine) Reset() {
-	d.cb = nil
-	d.method = ""
-	d.path = ""
-	d.handle = nil
+//获取引擎结构类型
+func (d *DynamicEngine) GetType() string {
+	return ACT_TYPE_DN
 }
 
 //websocket 引擎
@@ -316,10 +326,16 @@ type WsEngine struct {
 var _ IEngine = &WsEngine{}
 
 //初始化一个websocket引擎
-func (w *WsEngine) Init(c *Combination) {
-	w.cb = c
-	w.method = METHOD_WS                    //默认赋值为WS
-	w.path = strings.Trim(c.GetPath(), "/") //处理路由
+func (w *WsEngine) Init(c *Combination) IEngine {
+
+	method := METHOD_WS                    //默认赋值为WS
+	path := strings.Trim(c.GetPath(), "/") //处理路由
+
+	return &WsEngine{
+		cb:     c,
+		method: method,
+		path:   path,
+	}
 }
 
 //判断请求是否存在于websocket路由列表
@@ -338,14 +354,10 @@ func (w *WsEngine) Check(i interface{}) bool {
 
 //请求处理方法
 func (w *WsEngine) Handle() (err error) {
-	w.handle(w.cb)
-	w.Reset()
-	return nil
+	return w.handle(w.cb)
 }
 
-//重置引擎
-func (w *WsEngine) Reset() {
-	w.path = ""
-	w.handle = nil
-	w.cb = nil
+//获取引擎结构类型
+func (w *WsEngine) GetType() string {
+	return ACT_TYPE_WS
 }
