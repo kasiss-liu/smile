@@ -44,6 +44,7 @@ type RouteGroup struct {
 
 //注册一个路由
 func (rg *RouteGroup) Set(method string, path string, handler HandlerFunc) {
+	path = "/" + strings.Trim(path, "/")
 	switch method {
 	case METHOD_GET:
 		rg.GET[path] = handler

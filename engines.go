@@ -277,7 +277,7 @@ var _ IEngine = &DynamicEngine{}
 func (d *DynamicEngine) Init(c *Combination) IEngine {
 
 	method := c.GetMethod()
-	path := strings.Trim(c.GetPath(), "/")
+	path := "/" + strings.Trim(c.GetPath(), "/")
 
 	return &DynamicEngine{
 		cb:     c,
@@ -328,8 +328,8 @@ var _ IEngine = &WsEngine{}
 //初始化一个websocket引擎
 func (w *WsEngine) Init(c *Combination) IEngine {
 
-	method := METHOD_WS                    //默认赋值为WS
-	path := strings.Trim(c.GetPath(), "/") //处理路由
+	method := METHOD_WS                          //默认赋值为WS
+	path := "/" + strings.Trim(c.GetPath(), "/") //处理路由
 
 	return &WsEngine{
 		cb:     c,
