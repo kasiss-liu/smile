@@ -178,7 +178,7 @@ type FileEngine struct {
 	cb       *Combination //请求复合结构
 }
 
-const DEFAULT_FILE = "index.html"
+var DEFAULT_FILE = "index.html"
 
 //文件引擎初始化
 //储存请求复合结构
