@@ -59,12 +59,18 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//初始化使用引擎
 	engine := e.initActEngine(combine)
 
+	var actType string = "NOT_FOUND"
+
+	if engine != nil {
+		actType = engine.GetType()
+	}
+
 	//如果监控开关打开 并且注册了方法
 	//则在请求业务方法前后调用注册的start 和end 方法
 	if monitorSwitch && e.RunHandle != nil {
 		e.RunHandle.HandleStart(&MonitorInfo{
 			time.Now(),
-			engine.GetType(),
+			actType,
 			combine.GetPath(),
 			combine,
 		})
@@ -93,7 +99,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if monitorSwitch && e.RunHandle != nil {
 		e.RunHandle.HandleEnd(&MonitorInfo{
 			time.Now(),
-			engine.GetType(),
+			actType,
 			combine.GetPath(),
 			combine,
 		})
