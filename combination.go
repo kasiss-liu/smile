@@ -18,9 +18,14 @@ type Combination struct {
 	Request *http.Request
 }
 
-//文件上传大小限制
+//默认文件上传大小限制
 const (
-	MaxFileSize = 1 << 20
+	MaxFileSize = 5 << 20
+)
+
+//用户自定上传大小限制
+var (
+	CustomFileSize int64
 )
 
 //初始化一个*Combination
@@ -42,9 +47,15 @@ func InitCombination(w http.ResponseWriter, r *http.Request, e *Engine) *Combina
 		writer.Header().Set("Transfer-Encoding", "chunked")
 		writer.GzOn(gz)
 	}
+	var FileSize int64
+	if CustomFileSize > 0 {
+		FileSize = CustomFileSize
+	} else {
+		FileSize = MaxFileSize
+	}
 	//解析传参数据
 	r.ParseForm()
-	r.ParseMultipartForm(MaxFileSize)
+	r.ParseMultipartForm(FileSize)
 	return &Combination{writer, r}
 }
 
@@ -150,12 +161,17 @@ func (c *Combination) GetMultipartFormParam(key string) []string {
 	return c.Request.MultipartForm.Value[key]
 }
 
-//根据键名冲form-data类型中取得上传文件
+//根据键名冲form-data类型中取得上传文件头信息
 func (c *Combination) GetMultipartFormFile(key string) []*multipart.FileHeader {
 	if c.Request.MultipartForm == nil {
 		return nil
 	}
 	return c.Request.MultipartForm.File[key]
+}
+
+//根据键名获取上传文件
+func (c *Combination) GetFormFile(key string) (multipart.File, *multipart.FileHeader, error) {
+	return c.Request.FormFile(key)
 }
 
 //从请求携带的cookie中取值
