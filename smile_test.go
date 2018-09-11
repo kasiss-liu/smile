@@ -106,6 +106,4 @@ func TestMode(t *testing.T) {
 	if mode != MODE_PRO {
 		t.Error("SetPRODUCTION failed")
 	}
-	fmt.Println(Mode())
-	fmt.Println(MonitorStatus())
 }

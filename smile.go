@@ -53,6 +53,7 @@ func NewEngine(fileDir string) *Engine {
 
 //有请求的时候 把请求处理以后 储存到结构中
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	//初始化一个请求复合 包含了本次请求及响应的数据
 	combine := InitCombination(w, r, e)
 

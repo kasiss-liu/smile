@@ -132,8 +132,10 @@ func (d *DynamicEngine) Check(i interface{}) bool {
 
 //执行已经保存的业务方法
 //暂时不做错误返回处理
-func (d *DynamicEngine) Handle() error {
-	return d.handle(d.cb)
+func (d *DynamicEngine) Handle() (err error) {
+	defer doRecover(&err, d.cb)
+	err = d.handle(d.cb)
+	return err
 }
 
 //获取引擎结构类型
@@ -183,7 +185,9 @@ func (w *WsEngine) Check(i interface{}) bool {
 
 //请求处理方法
 func (w *WsEngine) Handle() (err error) {
-	return w.handle(w.cb)
+	defer doRecover(&err, w.cb)
+	err = w.handle(w.cb)
+	return err
 }
 
 //获取引擎结构类型

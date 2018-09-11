@@ -21,7 +21,7 @@ func TestFillRoutes(t *testing.T) {
 	rg.FillRoutes(METHOD_GET, "", tfc)
 	rg.FillRoutes(METHOD_POST, "", tfc)
 	rg.FillRoutes(METHOD_WS, "", tfc)
-	fn, err := rg.Get(METHOD_GET, "Func")
+	fn, err := rg.Get(METHOD_GET, "/Func")
 	if err != nil {
 		t.Errorf("%#v\n", rg)
 		t.Errorf(err.Error())
@@ -55,14 +55,14 @@ func TestFillPrefixRoutes(t *testing.T) {
 	rg := NewRouteGroup()
 	rg.SetPathStyleConnector()
 	rg.PrefixFillRoutes("", tc)
-	fn, err := rg.Get(METHOD_GET, "func-test")
+	fn, err := rg.Get(METHOD_GET, "/func-test")
 	if err != nil {
 		t.Errorf("%#v\n", rg)
 		t.Errorf(err.Error())
 	} else {
 		t.Logf("%#v\n", fn)
 	}
-	fn, err = rg.Get(METHOD_POST, "func")
+	fn, err = rg.Get(METHOD_POST, "/func")
 	if err != nil {
 		t.Errorf("%#v\n", rg)
 		t.Errorf(err.Error())
@@ -70,7 +70,7 @@ func TestFillPrefixRoutes(t *testing.T) {
 		t.Logf("%#v\n", fn)
 	}
 
-	fn, err = rg.Get(METHOD_WS, "func")
+	fn, err = rg.Get(METHOD_WS, "/func")
 	if err != nil {
 		t.Errorf("%#v\n", rg)
 		t.Errorf(err.Error())
@@ -87,7 +87,7 @@ func TestFillPrefixRoutes(t *testing.T) {
 
 	rg.SetPathStyleHump()
 	rg.PrefixFillRoutes("", tc)
-	fn, err = rg.Get(METHOD_GET, "FuncTest")
+	fn, err = rg.Get(METHOD_GET, "/FuncTest")
 	if err != nil {
 		t.Errorf("%#v\n", rg)
 		t.Errorf(err.Error())

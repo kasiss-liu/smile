@@ -16,7 +16,7 @@ const (
 	defaultStatus   = 200
 )
 
-//定义一个writer接口
+//ResponseWriter 定义一个writer接口
 //该接口可用于http、weibsocket的响应操作
 type ResponseWriter interface {
 	http.ResponseWriter
