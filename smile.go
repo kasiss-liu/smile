@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-//一个服务器引擎
+//Engine 一个服务器引擎
 type Engine struct {
 	RouteGroup    *RouteGroup
 	fileEngine    IEngine
@@ -23,7 +23,7 @@ type Engine struct {
 	//debug
 }
 
-//生成一个默认配置的服务器
+//Default 生成一个默认配置的服务器
 //有动态引擎和websocket引擎
 func Default() *Engine {
 	return &Engine{
@@ -35,7 +35,7 @@ func Default() *Engine {
 	}
 }
 
-//获取一个具有全部处理引擎的服务器
+//NewEngine 获取一个具有全部处理引擎的服务器
 func NewEngine(fileDir string) *Engine {
 	e := Default()
 	//判断路径是否可用
@@ -51,7 +51,7 @@ func NewEngine(fileDir string) *Engine {
 	return e
 }
 
-//有请求的时候 把请求处理以后 储存到结构中
+//ServeHTTP 有请求的时候 把请求处理以后 储存到结构中
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//初始化一个请求复合 包含了本次请求及响应的数据
@@ -60,7 +60,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//初始化使用引擎
 	engine := e.initActEngine(combine)
 
-	var actType string = "NOT_FOUND"
+	var actType = "NOT_FOUND"
 
 	if engine != nil {
 		actType = engine.GetType()
@@ -140,42 +140,42 @@ func (e *Engine) initActEngine(c *Combination) (threadEngine IEngine) {
 	return nil
 }
 
-//注册一个监控器
+//SetMonitor 注册一个监控器
 func (e *Engine) SetMonitor(m RunMonitor) {
 	e.RunHandle = m
 }
 
-//注册一个logger
+//SetLoger 注册一个logger
 func (e *Engine) SetLoger(l ILogger) {
 	e.Logger = l
 }
 
-//注册一个路由组
+//SetRouteGroup 注册一个路由组
 func (e *Engine) SetRouteGroup(r *RouteGroup) {
 	e.RouteGroup = r
 }
 
-//开启Gzip
+//GzipOn 开启Gzip
 func (e *Engine) GzipOn() {
 	e.Gzip = true
 }
 
-//关闭Gzip
+//GzipOff 关闭Gzip
 func (e *Engine) GzipOff() {
 	e.Gzip = false
 }
 
-//注册404回调方法
+//SetRout404 注册404回调方法
 func (e *Engine) SetRout404(fn HandlerFunc) {
 	e.Rout404 = fn
 }
 
-//启动一个HttpServer
+//Run 启动一个HttpServer
 func (e *Engine) Run(port string) {
 	http.ListenAndServe(port, e)
 }
 
-//启动一个HttpsServer
+//RunTLS 启动一个HttpsServer
 func (e *Engine) RunTLS(port, cert, key string) {
 	http.ListenAndServeTLS(port, cert, key, e)
 }

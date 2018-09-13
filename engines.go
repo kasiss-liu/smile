@@ -12,12 +12,12 @@ import (
 
 //注册几种请求类型
 const (
-	ACT_TYPE_FILE = "FILE"
-	ACT_TYPE_WS   = "WS"
-	ACT_TYPE_DN   = "DYNAMIC"
+	ActTypeFile = "FILE"
+	ActTypeWs   = "WS"
+	ActTypeDn   = "DYNAMIC"
 )
 
-//一个引擎接口
+//IEngine 一个引擎接口
 type IEngine interface {
 	Init(*Combination) IEngine //初始化引擎
 	Handle() error             //执行方法
@@ -27,7 +27,7 @@ type IEngine interface {
 
 var _ IEngine = &FileEngine{}
 
-//文件请求引擎
+//FileEngine 文件请求引擎
 //响应静态文件数据请求
 type FileEngine struct {
 	BaseDir  string       //文件仓库地址
@@ -36,9 +36,10 @@ type FileEngine struct {
 	cb       *Combination //请求复合结构
 }
 
-var DEFAULT_FILE = "index.html"
+//DefaultFile 文件服务器默认输出文件
+var DefaultFile = "index.html"
 
-//文件引擎初始化
+//Init 文件引擎初始化
 //储存请求复合结构
 //处理请求文件地址
 //处理请求文件后缀
@@ -46,7 +47,7 @@ func (f *FileEngine) Init(c *Combination) IEngine {
 
 	filename := strings.Trim(c.GetPath(), "/")
 	if filename == "" {
-		filename = DEFAULT_FILE
+		filename = DefaultFile
 	}
 	filePath := f.BaseDir + filename
 	fileExt := path.Ext(filePath)
@@ -59,14 +60,14 @@ func (f *FileEngine) Init(c *Combination) IEngine {
 	}
 }
 
-//响应处理方法
+//Handle 响应处理方法
 func (f *FileEngine) Handle() (err error) {
 	//调用http包输出文件的方法
 	http.ServeFile(f.cb.ResponseWriter, f.cb.Request, f.FilePath)
 	return nil
 }
 
-//判断请求文件是否存在
+//FileExist 判断请求文件是否存在
 func (f *FileEngine) FileExist() bool {
 	//获取文件/文件夹信息
 	file, err := os.Stat(f.FilePath)
@@ -80,17 +81,17 @@ func (f *FileEngine) FileExist() bool {
 	return false
 }
 
-//判断请求是否为文件请求
+//Check 判断请求是否为文件请求
 func (f *FileEngine) Check(i interface{}) bool {
 	return f.FileExist()
 }
 
-//获取引擎结构类型
+//GetType 获取引擎结构类型
 func (f *FileEngine) GetType() string {
-	return ACT_TYPE_FILE
+	return ActTypeFile
 }
 
-//动态请求引擎
+//DynamicEngine 动态请求引擎
 //业务处理的相关处理引擎
 type DynamicEngine struct {
 	cb     *Combination
@@ -101,7 +102,7 @@ type DynamicEngine struct {
 
 var _ IEngine = &DynamicEngine{}
 
-//引擎初始化
+//Init 引擎初始化
 //获取请求类型和请求路由 并保存
 func (d *DynamicEngine) Init(c *Combination) IEngine {
 
@@ -116,7 +117,7 @@ func (d *DynamicEngine) Init(c *Combination) IEngine {
 
 }
 
-//在路由列表中判断 动态请求路由是否已经注册
+//Check 在路由列表中判断 动态请求路由是否已经注册
 //如果已经注册 则本次请求由动态引擎处理
 //保存路由中已经注册的业务方法
 func (d *DynamicEngine) Check(i interface{}) bool {
@@ -130,7 +131,7 @@ func (d *DynamicEngine) Check(i interface{}) bool {
 	return false
 }
 
-//执行已经保存的业务方法
+//Handle 执行已经保存的业务方法
 //暂时不做错误返回处理
 func (d *DynamicEngine) Handle() (err error) {
 	defer doRecover(&err, d.cb)
@@ -138,12 +139,12 @@ func (d *DynamicEngine) Handle() (err error) {
 	return err
 }
 
-//获取引擎结构类型
+//GetType 获取引擎结构类型
 func (d *DynamicEngine) GetType() string {
-	return ACT_TYPE_DN
+	return ActTypeDn
 }
 
-//websocket 引擎
+//WsEngine websocket 引擎
 //主要用于处理websocket链接请求
 //websocket也属于http请求
 //处理逻辑于http请求类似
@@ -156,10 +157,10 @@ type WsEngine struct {
 
 var _ IEngine = &WsEngine{}
 
-//初始化一个websocket引擎
+//Init 初始化一个websocket引擎
 func (w *WsEngine) Init(c *Combination) IEngine {
 
-	method := METHOD_WS                          //默认赋值为WS
+	method := MethodWs                           //默认赋值为WS
 	path := "/" + strings.Trim(c.GetPath(), "/") //处理路由
 
 	return &WsEngine{
@@ -169,7 +170,7 @@ func (w *WsEngine) Init(c *Combination) IEngine {
 	}
 }
 
-//判断请求是否存在于websocket路由列表
+//Check 判断请求是否存在于websocket路由列表
 //如果路由列表中已经注册，则本次请求由websocket引擎处理
 //保存对应的处理方法
 func (w *WsEngine) Check(i interface{}) bool {
@@ -183,14 +184,14 @@ func (w *WsEngine) Check(i interface{}) bool {
 	return false
 }
 
-//请求处理方法
+//Handle 请求处理方法
 func (w *WsEngine) Handle() (err error) {
 	defer doRecover(&err, w.cb)
 	err = w.handle(w.cb)
 	return err
 }
 
-//获取引擎结构类型
+//GetType 获取引擎结构类型
 func (w *WsEngine) GetType() string {
-	return ACT_TYPE_WS
+	return ActTypeWs
 }

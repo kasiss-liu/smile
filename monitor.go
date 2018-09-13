@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-//monitor接口 可以注册任何实现该接口的结构到引擎中
+//RunMonitor monitor接口 可以注册任何实现该接口的结构到引擎中
 type RunMonitor interface {
 	HandleStart(*MonitorInfo)
 	HandleEnd(*MonitorInfo)
 }
 
-//接口方法的注入参数
+//MonitorInfo 接口方法的注入参数
 type MonitorInfo struct {
 	CaseTime    time.Time
 	Method      string

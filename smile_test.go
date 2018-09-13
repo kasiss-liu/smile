@@ -95,15 +95,15 @@ func TestMode(t *testing.T) {
 		t.Error("monitorOff failed")
 	}
 	SetTESTING()
-	if mode != MODE_TESTING {
+	if mode != ModeTESTING {
 		t.Error("SetTESTING failed")
 	}
 	SetDEBUG()
-	if mode != MODE_DEBUG {
+	if mode != ModeDEBUG {
 		t.Error("SetDEBUG failed")
 	}
 	SetPRODUCTION()
-	if mode != MODE_PRO {
+	if mode != ModePRO {
 		t.Error("SetPRODUCTION failed")
 	}
 }

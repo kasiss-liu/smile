@@ -35,7 +35,7 @@ func defaultRecover(c *Combination, rec interface{}) error {
 	return errors.New(recoverPrefix + s)
 }
 
-//由外部注入一个recover函数 会替换默认函数
+//SetRecovery 由外部注入一个recover函数 会替换默认函数
 func SetRecovery(fnc Recovery) {
 	recovery = fnc
 }

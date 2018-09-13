@@ -5,26 +5,26 @@ package smile
 
 //定义了一些模式和HOOK 方便调测
 const (
-	MODE_DEBUG   = "debug"
-	MODE_TESTING = "testing"
-	MODE_PRO     = "production"
+	ModeDEBUG   = "debug"
+	ModeTESTING = "testing"
+	ModePRO     = "production"
 )
 
 //Hook开关
 //开启后 将执行注册在引擎内的monitor方法
-var monitorSwitch bool = false
+var monitorSwitch = false
 
-//开启monitor
+//MonitorOn 开启monitor
 func MonitorOn() {
 	monitorSwitch = true
 }
 
-//关闭monitor
+//MonitorOff 关闭monitor
 func MonitorOff() {
 	monitorSwitch = false
 }
 
-//获取monitor状态
+//MonitorStatus 获取monitor状态
 func MonitorStatus() bool {
 	return monitorSwitch
 }
@@ -32,36 +32,36 @@ func MonitorStatus() bool {
 //模式
 var mode string
 
-//开发模式
+//SetDEBUG 开发模式
 func SetDEBUG() {
-	mode = MODE_DEBUG
+	mode = ModeDEBUG
 }
 
-//生产模式
+//SetPRODUCTION 生产模式
 func SetPRODUCTION() {
-	mode = MODE_PRO
+	mode = ModePRO
 }
 
-//测试模式
+//SetTESTING 测试模式
 func SetTESTING() {
-	mode = MODE_TESTING
+	mode = ModeTESTING
 }
 
-//返回当前模式
+//Mode 返回当前模式
 func Mode() string {
 	return mode
 }
 
 //日志开关
 //是否开启日志功能
-var logSwitch bool = true
+var logSwitch = true
 
-//开启日志
+//LogON 开启日志
 func LogON() {
 	logSwitch = true
 }
 
-//关闭日志
+//LogOFF 关闭日志
 func LogOFF() {
 	logSwitch = false
 }

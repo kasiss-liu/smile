@@ -33,6 +33,7 @@ func websocketFunc(c *smile.Combination) error {
 		err = conn.WriteMessage(messageType, []byte("hello"))
 		if err != nil {
 			fmt.Println(err.Error())
+			break
 		}
 	}
 	return nil

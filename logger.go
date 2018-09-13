@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-//日志处理
+//ILogger 日志处理
 type ILogger interface {
 	Write(io.Writer, string)
 	Log(*Combination)
@@ -36,7 +36,7 @@ var (
 	logprefix     = "[LOG]"
 )
 
-//实现一个日志结构
+//Logger 实现一个日志结构
 type Logger struct {
 	Writer io.Writer
 	isTerm bool
@@ -49,17 +49,17 @@ func (l *Logger) Write(w io.Writer, s string) {
 	fmt.Fprintln(w, s)
 }
 
-//开启终端输出（数据染色）
+//TermOn 开启终端输出（数据染色）
 func (l *Logger) TermOn() {
 	l.isTerm = true
 }
 
-//关闭终端输出（数据染色取消）
+//TermOff 关闭终端输出（数据染色取消）
 func (l *Logger) TermOff() {
 	l.isTerm = false
 }
 
-//Log方法
+//Log 方法
 //整理需要log的数据拼接后进行输出
 func (l *Logger) Log(c *Combination) {
 
@@ -130,13 +130,13 @@ func colorForStatus(status int) string {
 //根据不同的方法获取颜色
 func colorForMethod(method string) string {
 	switch method {
-	case METHOD_POST:
+	case MethodPost:
 		return magenta
-	case METHOD_GET:
+	case MethodGet:
 		return yellow
-	case METHOD_PUT:
+	case MethodPut:
 		return blue
-	case METHOD_DELETE:
+	case MethodDelete:
 		return red
 	default:
 		return white

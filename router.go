@@ -10,29 +10,30 @@ import (
 	"strings"
 )
 
-//定一个业务执行方法
+//HandlerFunc 定一个业务执行方法
 type HandlerFunc func(*Combination) error
 
 //定义部分请求类型及其匹配式
 const (
-	METHOD_GET    = "GET"
-	METHOD_POST   = "POST"
-	METHOD_WS     = "WS"
-	METHOD_PUT    = "PUT"
-	METHOD_DELETE = "DELETE"
-	regexp_Post   = "(POST)|(Post)|"
-	regexp_Get    = "(GET)|(Get)|"
-	regexp_Ws     = "(WS)|(Ws)|"
-	regexp_Put    = "(PUT)|(Put)|"
-	regexp_Det    = "(DELETE)|(Delete)|"
+	MethodGet    = "GET"
+	MethodPost   = "POST"
+	MethodWs     = "WS"
+	MethodPut    = "PUT"
+	MethodDelete = "DELETE"
+	regexpPost   = "(POST)|(Post)|"
+	regexpGet    = "(GET)|(Get)|"
+	regexpWs     = "(WS)|(Ws)|"
+	regexpPut    = "(PUT)|(Put)|"
+	regexpDet    = "(DELETE)|(Delete)|"
 )
 
+//定义自动生成路由的风格
 const (
-	STYLE_HUMP    = "hump"
-	STYLE_CONNECT = "connector"
+	StyleHump    = "hump"
+	StyleConnect = "connector"
 )
 
-//路由列表
+//RouteGroup 路由列表
 type RouteGroup struct {
 	GET       map[string]HandlerFunc
 	POST      map[string]HandlerFunc
@@ -42,67 +43,69 @@ type RouteGroup struct {
 	pathStyle string //自动填充路由时 方法名称转化为路径后的风格
 }
 
-//注册一个路由
+//Set 注册一个路由
 func (rg *RouteGroup) Set(method string, path string, handler HandlerFunc) {
 	path = "/" + strings.Trim(path, "/")
 	switch method {
-	case METHOD_GET:
+	case MethodGet:
 		rg.GET[path] = handler
-	case METHOD_POST:
+	case MethodPost:
 		rg.POST[path] = handler
-	case METHOD_WS:
+	case MethodWs:
 		rg.WS[path] = handler
-	case METHOD_PUT:
+	case MethodPut:
 		rg.PUT[path] = handler
-	case METHOD_DELETE:
+	case MethodDelete:
 		rg.DELETE[path] = handler
 	default:
 	}
 }
 
-//注册一个GET方法请求到的路由
+//SetGET 注册一个GET方法请求到的路由
 func (rg *RouteGroup) SetGET(path string, handler HandlerFunc) {
-	rg.Set(METHOD_GET, path, handler)
+	rg.Set(MethodGet, path, handler)
 }
 
-//注册一个POST方法可用的路由
+//SetPOST 注册一个POST方法可用的路由
 func (rg *RouteGroup) SetPOST(path string, handler HandlerFunc) {
-	rg.Set(METHOD_POST, path, handler)
+	rg.Set(MethodPost, path, handler)
 }
 
-//注册一个websocket路由
+//SetWS 注册一个websocket路由
 func (rg *RouteGroup) SetWS(path string, handler HandlerFunc) {
-	rg.Set(METHOD_WS, path, handler)
+	rg.Set(MethodWs, path, handler)
 }
 
+//SetPUT 注册一个PUT方法可用的路由
 func (rg *RouteGroup) SetPUT(path string, handler HandlerFunc) {
-	rg.Set(METHOD_PUT, path, handler)
+	rg.Set(MethodPut, path, handler)
 }
 
+//SetDEL 注册一个PUT方法可用的路由
 func (rg *RouteGroup) SetDEL(path string, handler HandlerFunc) {
-	rg.Set(METHOD_DELETE, path, handler)
+	rg.Set(MethodDelete, path, handler)
 }
 
-//根据请求方法 获取一个注册的方法
+//Get 根据请求方法 获取一个注册的方法
 func (rg *RouteGroup) Get(method string, path string) (HandlerFunc, error) {
 	switch method {
-	case METHOD_GET:
+	case MethodGet:
 		if val, ok := rg.GET[path]; ok {
 			return val, nil
 		}
-	case METHOD_POST:
+	case MethodPost:
 		if val, ok := rg.POST[path]; ok {
 			return val, nil
 		}
-	case METHOD_WS:
+	case MethodWs:
 		if val, ok := rg.WS[path]; ok {
 			return val, nil
 		}
-	case METHOD_PUT:
+	case MethodPut:
 		if val, ok := rg.PUT[path]; ok {
 			return val, nil
 		}
-	case METHOD_DELETE:
+	case MethodDelete:
 		if val, ok := rg.DELETE[path]; ok {
 			return val, nil
 		}
@@ -111,7 +114,7 @@ func (rg *RouteGroup) Get(method string, path string) (HandlerFunc, error) {
 	return nil, errors.New("METHOD:" + method + " PATH:" + path + " DID NOT REGISTER YET")
 }
 
-//生成一个新的路由列表
+//NewRouteGroup 生成一个新的路由列表
 func NewRouteGroup() *RouteGroup {
 	r := &RouteGroup{}
 	r.GET = make(map[string]HandlerFunc, 10)
@@ -123,7 +126,7 @@ func NewRouteGroup() *RouteGroup {
 	return r
 }
 
-//填充路由基础方法
+//FillRoutes 填充路由基础方法
 func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 	t := reflect.TypeOf(c)
 	v := reflect.ValueOf(c)
@@ -135,15 +138,15 @@ func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 			fnName = rg.transFnNameToPath(fnName)
 			path := strings.Trim(prefix+"/"+fnName, "/")
 			switch method {
-			case METHOD_GET:
+			case MethodGet:
 				rg.SetGET(path, fn)
-			case METHOD_POST:
+			case MethodPost:
 				rg.SetPOST(path, fn)
-			case METHOD_WS:
+			case MethodWs:
 				rg.SetWS(path, fn)
-			case METHOD_PUT:
+			case MethodPut:
 				rg.SetPUT(path, fn)
-			case METHOD_DELETE:
+			case MethodDelete:
 				rg.SetDEL(path, fn)
 			default:
 			}
@@ -151,14 +154,14 @@ func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 	}
 }
 
-//前缀匹配规则 填充路由
+//PrefixFillRoutes 前缀匹配规则 填充路由
 //暂时只支持GET、POST、WS
 //将一个Controller结构下的方法按照方法名称注册到routeGroup中
 func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 	t := reflect.TypeOf(c)
 	v := reflect.ValueOf(c)
 	l := t.NumMethod()
-	reg, _ := regexp.Compile(`^(` + regexp_Post + regexp_Get + regexp_Ws + regexp_Put + regexp_Det + `).+`)
+	reg, _ := regexp.Compile(`^(` + regexpPost + regexpGet + regexpWs + regexpPut + regexpDet + `).+`)
 	var method string
 	for i := 0; i < l; i++ {
 		fnName := t.Method(i).Name
@@ -174,15 +177,15 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 			fnName = rg.transFnNameToPath(fnName)
 			path := strings.Trim(prefix+"/"+fnName, "/")
 			switch method {
-			case METHOD_GET:
+			case MethodGet:
 				rg.SetGET(path, fn)
-			case METHOD_POST:
+			case MethodPost:
 				rg.SetPOST(path, fn)
-			case METHOD_WS:
+			case MethodWs:
 				rg.SetWS(path, fn)
-			case METHOD_PUT:
+			case MethodPut:
 				rg.SetPUT(path, fn)
-			case METHOD_DELETE:
+			case MethodDelete:
 				rg.SetDEL(path, fn)
 			default:
 			}
@@ -190,19 +193,19 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 	}
 }
 
-//设置路径风格为驼峰 即区分大小写
+//SetPathStyleHump 设置路径风格为驼峰 即区分大小写
 func (rg *RouteGroup) SetPathStyleHump() {
-	rg.pathStyle = STYLE_HUMP
+	rg.pathStyle = StyleHump
 }
 
-//设置路径风格为连字符格式 将驼峰转为连接符风格
+//SetPathStyleConnector 设置路径风格为连字符格式 将驼峰转为连接符风格
 func (rg *RouteGroup) SetPathStyleConnector() {
-	rg.pathStyle = STYLE_CONNECT
+	rg.pathStyle = StyleConnect
 }
 
 //根据规则转化方法名称为路径
 func (rg *RouteGroup) transFnNameToPath(fnName string) string {
-	if rg.pathStyle == STYLE_CONNECT {
+	if rg.pathStyle == StyleConnect {
 		reg, _ := regexp.Compile(`[A-Z]+`)
 		fnName = reg.ReplaceAllStringFunc(fnName, func(str string) string {
 			return "-" + strings.ToLower(str)
