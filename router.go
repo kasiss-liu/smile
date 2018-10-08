@@ -170,7 +170,12 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 		if len(rexSubmatch) > 0 {
 			method = strings.ToUpper(rexSubmatch[1])
 			//去掉函数名称中的方法类型
-			fnName = strings.Replace(fnName, rexSubmatch[1], "", -1)
+			if len(rexSubmatch[1]) < 1 {
+				fnName = "/"
+				method = strings.ToUpper(rexSubmatch[0])
+			} else {
+				fnName = strings.Replace(fnName, rexSubmatch[1], "", -1)
+			}
 		}
 		if fn, ok := interf.(func(*Combination) error); ok {
 			//函数名称转化为请求路径path的全小写格式
