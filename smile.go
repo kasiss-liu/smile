@@ -60,7 +60,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//初始化使用引擎
 	engine := e.initActEngine(combine)
 
-	var actType = "NOT_FOUND"
+	var actType = ActType404
 
 	if engine != nil {
 		actType = engine.GetType()

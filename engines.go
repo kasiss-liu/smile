@@ -15,6 +15,7 @@ const (
 	ActTypeFile = "FILE"
 	ActTypeWs   = "WS"
 	ActTypeDn   = "DYNAMIC"
+	ActType404  = "NOT_FOUND"
 )
 
 //IEngine 一个引擎接口
