@@ -68,7 +68,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//如果监控开关打开 并且注册了方法
 	//则在请求业务方法前后调用注册的start 和end 方法
-	if monitorSwitch && e.RunHandle != nil && e.fileEngine.GetType() != ActTypeFile {
+	if monitorSwitch && e.RunHandle != nil && actType != ActTypeFile {
 		e.RunHandle.HandleStart(&MonitorInfo{
 			time.Now(),
 			actType,
@@ -86,7 +86,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		//当请求的路由不在注册列表中时
 		//如果注册了Route404修复方法 则调用Route404
-		if e.Rout404 != nil && e.fileEngine.GetType() != ActTypeFile {
+		if e.Rout404 != nil && actType != ActTypeFile {
 			err = e.Rout404(combine)
 		}
 		combine.WriteHeader(http.StatusNotFound)
@@ -99,7 +99,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//监控结束方法
-	if monitorSwitch && e.RunHandle != nil && e.fileEngine.GetType() != ActTypeFile {
+	if monitorSwitch && e.RunHandle != nil && actType != ActTypeFile {
 		e.RunHandle.HandleEnd(&MonitorInfo{
 			time.Now(),
 			actType,
