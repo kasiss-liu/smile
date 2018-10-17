@@ -198,3 +198,10 @@ func (c *Combination) Close() {
 		}
 	}
 }
+
+//Redirect 302跳转到指定地址
+func (c *Combination) Redirect(url string) {
+	c.WriteHeader(http.StatusFound)
+	c.Header().Set("Location", url)
+	c.Done()
+}

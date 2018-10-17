@@ -26,6 +26,7 @@ type ResponseWriter interface {
 	DataSize() int
 	Status() int
 	WriteString(string) (int, error)
+	Done()
 }
 
 //实现一个ResoponsWriter接口
@@ -104,6 +105,13 @@ func (w *responseWriter) Write(data []byte) (n int, err error) {
 	}
 	w.size += n
 	return
+}
+
+//Done 向请求中写入空字节 以结束请求
+//用来执行跳转 或者单纯的header设置
+func (w *responseWriter) Done() {
+	w.size = 0
+	w.Write([]byte(""))
 }
 
 //直接写入字符串

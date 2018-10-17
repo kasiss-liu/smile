@@ -40,6 +40,9 @@ type FileEngine struct {
 //DefaultFile 文件服务器默认输出文件
 var DefaultFile = "index.html"
 
+//httpExceptFile http包内的文件服务函数 会针对index.html做301
+const httpExceptFile = "index.html"
+
 //Init 文件引擎初始化
 //储存请求复合结构
 //处理请求文件地址
@@ -47,10 +50,17 @@ var DefaultFile = "index.html"
 func (f *FileEngine) Init(c *Combination) IEngine {
 
 	filename := strings.Trim(c.GetPath(), "/")
+
+	//http包内的文件服务函数 会针对index.html做301
+	//在这里做一下特殊处理
+	if filename == httpExceptFile {
+		c.Request.URL.Path = "/"
+	}
+	//默认index.html 如果直接访问根目录 则返回index.html页面
 	if filename == "" {
 		filename = DefaultFile
 	}
-	filePath := f.BaseDir + filename
+	filePath := path.Clean(f.BaseDir + filename)
 	fileExt := path.Ext(filePath)
 
 	return &FileEngine{
@@ -70,6 +80,7 @@ func (f *FileEngine) Handle() (err error) {
 
 //FileExist 判断请求文件是否存在
 func (f *FileEngine) FileExist() bool {
+
 	//获取文件/文件夹信息
 	file, err := os.Stat(f.FilePath)
 	//如果存在 则判断是否是文件夹
