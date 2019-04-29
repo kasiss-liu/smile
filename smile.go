@@ -4,7 +4,6 @@
 package smile
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -95,7 +94,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		//debug
-		fmt.Println("[debug] " + err.Error())
+		doDebug(err, combine)
 	}
 
 	//监控结束方法
