@@ -20,7 +20,7 @@ type Engine struct {
 	Gzip          bool
 	Rout404       HandlerFunc //注册时 404调用
 	//debug
-	Errors		  []error
+	Errors []error
 }
 
 //Default 生成一个默认配置的服务器
@@ -175,23 +175,36 @@ func (e *Engine) SetRout404(fn HandlerFunc) {
 }
 
 //Run 启动一个HttpServer
-func (e *Engine) Run(port string) error {
-	err := http.ListenAndServe(port, e)
-	if err != nil {
-		e.Errors = append(e.Errors,err)
+func (e *Engine) Run(port string) (err error) {
+
+	defer doRecover(&err, nil)
+
+	if !GetInitState() {
+		DoCustomInit()
 	}
-	return err
+	err = http.ListenAndServe(port, e)
+	if err != nil {
+		e.Errors = append(e.Errors, err)
+	}
+	return
 }
 
 //RunTLS 启动一个HttpsServer
-func (e *Engine) RunTLS(port, cert, key string) error {
-	err :=http.ListenAndServeTLS(port, cert, key, e)
-	if err != nil {
-		e.Errors = append(e.Errors,err)
+func (e *Engine) RunTLS(port, cert, key string) (err error) {
+
+	defer doRecover(&err, nil)
+
+	if !GetInitState() {
+		DoCustomInit()
 	}
-	return err
+	err = http.ListenAndServeTLS(port, cert, key, e)
+	if err != nil {
+		e.Errors = append(e.Errors, err)
+	}
+	return
 }
-//获取引擎中的错误
+
+//GetErrors 获取引擎中的错误
 func (e *Engine) GetErrors() []error {
 	return e.Errors
 }
