@@ -95,3 +95,13 @@ func TestFillPrefixRoutes(t *testing.T) {
 		t.Logf("%#v\n", fn)
 	}
 }
+
+func TestFormatRouteGroup(t *testing.T) {
+	rg := NewRouteGroup()
+	rg.SetPathStyleConnector()
+	rg.PrefixFillRoutes("", tc)
+	rg.SetGET("/gettest", tc.GetFuncTest)
+	rs := rg.FormatRoutes()
+	t.Logf("%#v\n", rs)
+	doPrintRoutes(rs)
+}

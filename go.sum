@@ -1,0 +1,4 @@
+github.com/gorilla/websocket v1.4.0 h1:WDFjx/TMzVgy9VdMMQi2K2Emtwi2QcUQsztZ/zLaH/Q=
+github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
+github.com/kasiss-liu/smile v0.0.0-20190513100648-8c524632d630 h1:72pWIW/PB2tnVue2Z0Lh5DUNhLSZ/rTMCXx/qAnYgc4=
+github.com/kasiss-liu/smile v0.0.0-20190513100648-8c524632d630/go.mod h1:Ha45itBtEtHnG/pjIyZbyizzksuBL5pyHmjK65QGbvg=

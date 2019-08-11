@@ -182,6 +182,11 @@ func (e *Engine) Run(port string) (err error) {
 	if !GetInitState() {
 		DoCustomInit()
 	}
+
+	if Mode() != ModePRO {
+		doPrintRoutes(e.RouteGroup.FormatRoutes())
+	}
+
 	err = http.ListenAndServe(port, e)
 	if err != nil {
 		e.Errors = append(e.Errors, err)
@@ -197,6 +202,11 @@ func (e *Engine) RunTLS(port, cert, key string) (err error) {
 	if !GetInitState() {
 		DoCustomInit()
 	}
+
+	if Mode() != ModePRO {
+		doPrintRoutes(e.RouteGroup.FormatRoutes())
+	}
+
 	err = http.ListenAndServeTLS(port, cert, key, e)
 	if err != nil {
 		e.Errors = append(e.Errors, err)

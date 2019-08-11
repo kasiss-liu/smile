@@ -5,8 +5,10 @@ package smile
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -33,19 +35,43 @@ const (
 	StyleConnect = "connector"
 )
 
+//path的打印基准长度
+const pathLen = 10
+
 //RouteGroup 路由列表
 type RouteGroup struct {
-	GET       map[string]HandlerFunc
-	POST      map[string]HandlerFunc
-	WS        map[string]HandlerFunc
-	PUT       map[string]HandlerFunc
-	DELETE    map[string]HandlerFunc
-	pathStyle string //自动填充路由时 方法名称转化为路径后的风格
+	GET            map[string]HandlerFunc
+	POST           map[string]HandlerFunc
+	WS             map[string]HandlerFunc
+	PUT            map[string]HandlerFunc
+	DELETE         map[string]HandlerFunc
+	pathStyle      string                       //自动填充路由时 方法名称转化为路径后的风格
+	routeFnameList map[string]map[string]string //路由->方法名列表
+}
+
+func (rg *RouteGroup) initRouteFnameList() {
+	list := make(map[string]map[string]string, 5)
+	list[MethodGet] = make(map[string]string, 10)
+	list[MethodPost] = make(map[string]string, 10)
+	list[MethodPut] = make(map[string]string, 10)
+	list[MethodWs] = make(map[string]string, 10)
+	list[MethodDelete] = make(map[string]string, 10)
+	rg.routeFnameList = list
+}
+
+func (rg *RouteGroup) setRouteFnameList(method, path string, handler interface{}) {
+	switch v := handler.(type) {
+	case string:
+		rg.routeFnameList[method][path] = v
+	case HandlerFunc:
+		rg.routeFnameList[method][path] = getFuncName(handler)
+	}
 }
 
 //Set 注册一个路由
 func (rg *RouteGroup) Set(method string, path string, handler HandlerFunc) {
-	path = "/" + strings.Trim(path, "/")
+	path = trimPath(path)
+	set := true
 	switch method {
 	case MethodGet:
 		rg.GET[path] = handler
@@ -58,7 +84,12 @@ func (rg *RouteGroup) Set(method string, path string, handler HandlerFunc) {
 	case MethodDelete:
 		rg.DELETE[path] = handler
 	default:
+		set = false
 	}
+	if set {
+		rg.setRouteFnameList(method, path, handler)
+	}
+
 }
 
 //SetGET 注册一个GET方法请求到的路由
@@ -123,6 +154,7 @@ func NewRouteGroup() *RouteGroup {
 	r.PUT = make(map[string]HandlerFunc, 10)
 	r.DELETE = make(map[string]HandlerFunc, 10)
 	r.SetPathStyleConnector()
+	r.initRouteFnameList()
 	return r
 }
 
@@ -134,6 +166,7 @@ func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 	for i := 0; i < l; i++ {
 		fnName := t.Method(i).Name
 		interf := v.Method(i).Interface()
+		set := true
 		if fn, ok := interf.(func(*Combination) error); ok {
 			fnName = rg.transFnNameToPath(fnName)
 			path := strings.Trim(prefix+"/"+fnName, "/")
@@ -149,6 +182,10 @@ func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 			case MethodDelete:
 				rg.SetDEL(path, fn)
 			default:
+				set = false
+			}
+			if set {
+				rg.setRouteFnameList(method, trimPath(path), t.String()+"."+t.Method(i).Name)
 			}
 		}
 	}
@@ -181,6 +218,7 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 			//函数名称转化为请求路径path的全小写格式
 			fnName = rg.transFnNameToPath(fnName)
 			path := strings.Trim(prefix+"/"+fnName, "/")
+			set := true
 			switch method {
 			case MethodGet:
 				rg.SetGET(path, fn)
@@ -193,7 +231,12 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 			case MethodDelete:
 				rg.SetDEL(path, fn)
 			default:
+				set = false
 			}
+			if set {
+				rg.setRouteFnameList(method, trimPath(path), t.String()+"."+t.Method(i).Name)
+			}
+
 		}
 	}
 }
@@ -217,4 +260,30 @@ func (rg *RouteGroup) transFnNameToPath(fnName string) string {
 		})
 	}
 	return strings.Trim(fnName, "-")
+}
+
+//FormatRoutes 返回格式化的路由信息 每个路由信息为一个string
+func (rg *RouteGroup) FormatRoutes() []string {
+	rm := make(map[string]string, 10)
+	rt := make(map[string][]byte)
+	baseLen := pathLen
+	for method, rgroup := range rg.routeFnameList {
+		for path, fnName := range rgroup {
+			rt[path] = []byte(method)
+			rm[path] = fnName
+		}
+	}
+
+	//重组每条路由信息数据
+	rs := make([]string, 0, 30)
+	for path, fnName := range rm {
+		s := fmt.Sprintf("%-6s  %-"+strconv.Itoa(baseLen)+"s --> %s",
+			rt[path],
+			path,
+			fnName,
+		)
+
+		rs = append(rs, s)
+	}
+	return rs
 }
