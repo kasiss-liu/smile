@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 //HandlerFunc 定一个业务执行方法
@@ -38,33 +39,48 @@ const (
 //path的打印基准长度
 const pathLen = 10
 
+type fnameList map[string]string
+
 //RouteGroup 路由列表
 type RouteGroup struct {
-	GET            map[string]HandlerFunc
-	POST           map[string]HandlerFunc
-	WS             map[string]HandlerFunc
-	PUT            map[string]HandlerFunc
-	DELETE         map[string]HandlerFunc
-	pathStyle      string                       //自动填充路由时 方法名称转化为路径后的风格
-	routeFnameList map[string]map[string]string //路由->方法名列表
+	GET                      map[string]HandlerFunc
+	POST                     map[string]HandlerFunc
+	WS                       map[string]HandlerFunc
+	PUT                      map[string]HandlerFunc
+	DELETE                   map[string]HandlerFunc
+	pathStyle                string               //自动填充路由时 方法名称转化为路径后的风格
+	routeAssignFnameList     map[string]fnameList //手写路由->方法名列表
+	routeAutoCreateFnameList map[string]fnameList //自动注册路由->方法名列表
+	autoFilling              bool                 //是否在自动生成路由
+	autoFillLock             sync.Mutex
 }
 
+//initRouteFnameList  初始化注册路由对应的执行方法名称
 func (rg *RouteGroup) initRouteFnameList() {
-	list := make(map[string]map[string]string, 5)
+	list := make(map[string]fnameList, 5)
 	list[MethodGet] = make(map[string]string, 10)
 	list[MethodPost] = make(map[string]string, 10)
 	list[MethodPut] = make(map[string]string, 10)
 	list[MethodWs] = make(map[string]string, 10)
 	list[MethodDelete] = make(map[string]string, 10)
-	rg.routeFnameList = list
+	rg.routeAssignFnameList = list
+
+	list = make(map[string]fnameList, 5)
+	list[MethodGet] = make(map[string]string, 10)
+	list[MethodPost] = make(map[string]string, 10)
+	list[MethodPut] = make(map[string]string, 10)
+	list[MethodWs] = make(map[string]string, 10)
+	list[MethodDelete] = make(map[string]string, 10)
+	rg.routeAutoCreateFnameList = list
 }
 
+//setRouteFnameList 记录注册路由对应的执行方法名称
 func (rg *RouteGroup) setRouteFnameList(method, path string, handler interface{}) {
 	switch v := handler.(type) {
 	case string:
-		rg.routeFnameList[method][path] = v
+		rg.routeAutoCreateFnameList[method][path] = v
 	case HandlerFunc:
-		rg.routeFnameList[method][path] = getFuncName(handler)
+		rg.routeAssignFnameList[method][path] = getFuncName(handler)
 	}
 }
 
@@ -86,10 +102,9 @@ func (rg *RouteGroup) Set(method string, path string, handler HandlerFunc) {
 	default:
 		set = false
 	}
-	if set {
+	if set && !rg.autoFilling {
 		rg.setRouteFnameList(method, path, handler)
 	}
-
 }
 
 //SetGET 注册一个GET方法请求到的路由
@@ -160,6 +175,14 @@ func NewRouteGroup() *RouteGroup {
 
 //FillRoutes 填充路由基础方法
 func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
+	//自动生成路由时，开启路由自动注册锁
+	rg.autoFillLock.Lock()
+	rg.autoFilling = true
+	defer func() {
+		rg.autoFilling = false
+		rg.autoFillLock.Unlock()
+	}()
+
 	t := reflect.TypeOf(c)
 	v := reflect.ValueOf(c)
 	l := t.NumMethod()
@@ -195,6 +218,14 @@ func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 //暂时只支持GET、POST、WS
 //将一个Controller结构下的方法按照方法名称注册到routeGroup中
 func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
+	//自动生成路由时，开启路由自动注册锁
+	rg.autoFillLock.Lock()
+	rg.autoFilling = true
+	defer func() {
+		rg.autoFilling = false
+		rg.autoFillLock.Unlock()
+	}()
+
 	t := reflect.TypeOf(c)
 	v := reflect.ValueOf(c)
 	l := t.NumMethod()
@@ -236,7 +267,6 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 			if set {
 				rg.setRouteFnameList(method, trimPath(path), t.String()+"."+t.Method(i).Name)
 			}
-
 		}
 	}
 }
@@ -263,17 +293,22 @@ func (rg *RouteGroup) transFnNameToPath(fnName string) string {
 }
 
 //FormatRoutes 返回格式化的路由信息 每个路由信息为一个string
-func (rg *RouteGroup) FormatRoutes() []string {
+func (rg *RouteGroup) FormatRoutes() (rsAssign []string, rsAuto []string) {
+	return rg.formatRoutes(rg.routeAssignFnameList),
+		rg.formatRoutes(rg.routeAutoCreateFnameList)
+}
+
+//formatRoutes 将路由信息格式化为字符串数组
+func (rg *RouteGroup) formatRoutes(rglist map[string]fnameList) []string {
 	rm := make(map[string]string, 10)
 	rt := make(map[string][]byte)
 	baseLen := pathLen
-	for method, rgroup := range rg.routeFnameList {
+	for method, rgroup := range rglist {
 		for path, fnName := range rgroup {
 			rt[path] = []byte(method)
 			rm[path] = fnName
 		}
 	}
-
 	//重组每条路由信息数据
 	rs := make([]string, 0, 30)
 	for path, fnName := range rm {
@@ -282,7 +317,6 @@ func (rg *RouteGroup) FormatRoutes() []string {
 			path,
 			fnName,
 		)
-
 		rs = append(rs, s)
 	}
 	return rs

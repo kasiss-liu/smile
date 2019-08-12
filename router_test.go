@@ -101,7 +101,7 @@ func TestFormatRouteGroup(t *testing.T) {
 	rg.SetPathStyleConnector()
 	rg.PrefixFillRoutes("", tc)
 	rg.SetGET("/gettest", tc.GetFuncTest)
-	rs := rg.FormatRoutes()
-	t.Logf("%#v\n", rs)
-	doPrintRoutes(rs)
+	rsAssign, rsAuto := rg.FormatRoutes()
+	t.Logf("%#v\n%#v\n", rsAssign, rsAuto)
+	doPrintRoutes(rsAssign, rsAuto)
 }

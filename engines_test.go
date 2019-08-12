@@ -33,6 +33,7 @@ func TestFileEngine(t *testing.T) {
 
 	e := &FileEngine{BaseDir: "./examples/"}
 	engine := e.Init(c)
+	t.Log(engine.GetType())
 	if engine.Check(rg) {
 		err := engine.Handle()
 		if err != nil {

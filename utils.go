@@ -19,8 +19,13 @@ func trimPath(path string) string {
 	return "/" + strings.Trim(path, "/")
 }
 
-func doPrintRoutes(routes []string) {
-	for _, v := range routes {
+func doPrintRoutes(routesAssign []string, routesAutoCreate []string) {
+	fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", "assigned:")
+	for _, v := range routesAssign {
+		fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", v)
+	}
+	fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", "autocreated:")
+	for _, v := range routesAutoCreate {
 		fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", v)
 	}
 }

@@ -13,6 +13,9 @@ func TestLogger(t *testing.T) {
 		true,
 	}
 
+	logger.TermOff()
+	logger.TermOn()
+
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/websocket/index.html", nil)
 	c := InitCombination(w, r, Default())
