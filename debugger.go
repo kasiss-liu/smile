@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-//Debug 定义外部panic处理函数，可用于覆盖默认值
+//Debugger 定义外部panic处理函数，可用于覆盖默认值
 type Debugger func(*Combination, error)
 
 // 储存一个处理panic的函数

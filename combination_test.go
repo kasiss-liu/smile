@@ -81,3 +81,33 @@ func TestCombination(t *testing.T) {
 	})
 
 }
+
+
+func TestHandlerChain(t *testing.T) {
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "http://localhost/test?id=1",nil)
+	
+	c := InitCombination(w,r,Default())
+	hc := newHanlderChain()
+	n := 1;
+	for i:=1;i<6;i++ {
+		hc.add(func(c *Combination) error {
+			logi := n
+			t.Log(logi)
+			if n == 2 {
+				t.Log(c.Abort())
+			}
+			n++
+			return nil
+		})
+	}
+	c.handlerChain = hc
+	
+	if err := c.Next();err != nil {
+		t.Error(err.Error())
+	}
+	if err := hc.next(c);err != nil {
+		t.Error(err.Error())
+	}
+}

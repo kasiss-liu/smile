@@ -23,7 +23,7 @@ func TestDoRecover(t *testing.T) {
 	r := httptest.NewRequest("", "/test_recover", nil)
 	c := InitCombination(w, r, Default())
 
-	e := &DynamicEngine{}
+	e := createEngine(false)
 	engine := e.Init(c)
 	if engine.Check(rg) {
 		err := engine.Handle()

@@ -10,25 +10,6 @@ const (
 	ModePRO     = "production"
 )
 
-//Hook开关
-//开启后 将执行注册在引擎内的monitor方法
-var monitorSwitch = false
-
-//MonitorOn 开启monitor
-func MonitorOn() {
-	monitorSwitch = true
-}
-
-//MonitorOff 关闭monitor
-func MonitorOff() {
-	monitorSwitch = false
-}
-
-//MonitorStatus 获取monitor状态
-func MonitorStatus() bool {
-	return monitorSwitch
-}
-
 //模式
 var mode string
 

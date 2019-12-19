@@ -6,16 +6,13 @@ package smile
 import (
 	"net/http"
 	"os"
-	"time"
 )
 
 //Engine 一个服务器引擎
 type Engine struct {
 	RouteGroup    *RouteGroup
 	fileEngine    IEngine
-	dynamicEngine IEngine
-	wsEngine      IEngine
-	RunHandle     RunMonitor
+	engine IEngine
 	Logger        ILogger
 	Gzip          bool
 	Rout404       HandlerFunc //注册时 404调用
@@ -27,8 +24,7 @@ type Engine struct {
 //有动态引擎和websocket引擎
 func Default() *Engine {
 	return &Engine{
-		dynamicEngine: &DynamicEngine{},
-		wsEngine:      &WsEngine{},
+		engine:  	   createEngine(false),
 		Logger:        &Logger{os.Stdout, true},
 		Gzip:          true,
 		RouteGroup:    new(RouteGroup),
@@ -36,18 +32,22 @@ func Default() *Engine {
 }
 
 //NewEngine 获取一个具有全部处理引擎的服务器
-func NewEngine(fileDir string) *Engine {
+func NewEngine(config... string) *Engine {
 	e := Default()
-	//判断路径是否可用
-	fileInfo, err := os.Stat(fileDir)
-	if err != nil {
-		panic(err)
+	if len(config) > 2 {
+		fileDir := config[0]
+		indexFile := config[1]
+		//判断路径是否可用
+		fileInfo, err := os.Stat(fileDir)
+		if err != nil {
+			panic(err)
+		}
+		//判断文件路径是否是一个文件夹
+		if !fileInfo.IsDir() {
+			panic(fileDir + " is not a directory")
+		}
+		e.engine = createEngine(true,fileDir,indexFile)
 	}
-	//判断文件路径是否是一个文件夹
-	if !fileInfo.IsDir() {
-		panic(fileDir + " is not a directory")
-	}
-	e.fileEngine = &FileEngine{BaseDir: fileDir}
 	return e
 }
 
@@ -55,98 +55,31 @@ func NewEngine(fileDir string) *Engine {
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//初始化一个请求复合 包含了本次请求及响应的数据
-	combine := InitCombination(w, r, e)
+	cb := InitCombination(w, r, e)
 
 	//初始化使用引擎
-	engine := e.initActEngine(combine)
-
-	var actType = ActType404
-
-	if engine != nil {
-		actType = engine.GetType()
-	}
-
-	//如果监控开关打开 并且注册了方法
-	//则在请求业务方法前后调用注册的start 和end 方法
-	if monitorSwitch && e.RunHandle != nil && actType != ActTypeFile {
-		e.RunHandle.HandleStart(&MonitorInfo{
-			time.Now(),
-			actType,
-			combine.GetPath(),
-			combine,
-		})
-	}
+	engine := e.engine.Init(cb)
 
 	var err error
 
-	if engine != nil {
-
+	if engine.Check(e.RouteGroup) {
 		err = engine.Handle()
-
 	} else {
-		//当请求的路由不在注册列表中时
-		//如果注册了Route404修复方法 则调用Route404
-		if e.Rout404 != nil && actType != ActTypeFile {
-			err = e.Rout404(combine)
-		}
-		combine.WriteHeader(http.StatusNotFound)
-		combine.Done()
+		
 	}
 
 	if err != nil {
 		//debug
-		doDebug(err, combine)
-	}
-
-	//监控结束方法
-	if monitorSwitch && e.RunHandle != nil && actType != ActTypeFile {
-		e.RunHandle.HandleEnd(&MonitorInfo{
-			time.Now(),
-			actType,
-			combine.GetPath(),
-			combine,
-		})
+		doDebug(err, cb)
 	}
 
 	//如果已经注册了 并且日志开关开启
 	//则进行日志打印
 	if e.Logger != nil && logSwitch {
-		e.Logger.Log(combine)
+		e.Logger.Log(cb)
 	}
-	combine.Close()
+	cb.Close()
 
-}
-
-//匹配本次请求的处理引擎
-func (e *Engine) initActEngine(c *Combination) (threadEngine IEngine) {
-
-	if e.wsEngine != nil {
-		threadEngine = e.wsEngine.Init(c)
-		if threadEngine.Check(e.RouteGroup) {
-			return
-		}
-	}
-
-	if e.dynamicEngine != nil {
-		threadEngine = e.dynamicEngine.Init(c)
-		if threadEngine.Check(e.RouteGroup) {
-			return
-		}
-	}
-
-	if e.fileEngine != nil {
-		threadEngine = e.fileEngine.Init(c)
-		if threadEngine.Check(nil) {
-			return
-		}
-	}
-
-	return nil
-}
-
-//SetMonitor 注册一个监控器
-func (e *Engine) SetMonitor(m RunMonitor) {
-	e.RunHandle = m
 }
 
 //SetLoger 注册一个logger
