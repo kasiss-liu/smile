@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"fmt"
 )
 
 
@@ -41,9 +42,22 @@ func createEngine(eFile bool, config... string) *engine {
 	e := &engine{}
 	e.enableFile = eFile
 	if eFile {
-		if len(config) > 2 {
+		if len(config) > 1 {
 			e.baseDir = config[0]
-			e.indexFilename = config[1]
+			if len(config) == 1 {
+				e.indexFilename = DefaultFile
+			}else{
+				e.indexFilename = config[1]
+			}
+			//判断路径是否可用
+			fileInfo, err := os.Stat(e.baseDir)
+			if err != nil {
+				panic(err)
+			}
+			//判断文件路径是否是一个文件夹
+			if !fileInfo.IsDir() {
+				panic(e.baseDir + " is not a directory")
+			}
 		}else{
 			e.enableFile = false
 		}
@@ -74,6 +88,7 @@ func (e *engine) Init (c *Combination) IEngine {
 //保存路由中已经注册的业务方法
 func (e *engine) Check(i interface{}) bool {
 	//先进行文件判断
+	fmt.Println(e.enableFile)
 	if e.enableFile {
 		filename := strings.Trim(e.cb.GetPath(), "/")
 		//http包内的文件服务函数 会针对index.html做301
@@ -86,7 +101,7 @@ func (e *engine) Check(i interface{}) bool {
 			filename = e.indexFilename
 		}
 		filePath := path.Clean(e.baseDir + filename)
-
+		fmt.Println(filePath)
 		//获取文件/文件夹信息
 		file, err := os.Stat(filePath)
 		//如果存在 则判断是否是文件夹

@@ -15,7 +15,7 @@ type Engine struct {
 	engine IEngine
 	Logger        ILogger
 	Gzip          bool
-	Rout404       HandlerFunc //注册时 404调用
+	Route404       HandlerFunc //注册时 404调用
 	//debug
 	Errors []error
 }
@@ -34,19 +34,8 @@ func Default() *Engine {
 //NewEngine 获取一个具有全部处理引擎的服务器
 func NewEngine(config... string) *Engine {
 	e := Default()
-	if len(config) > 2 {
-		fileDir := config[0]
-		indexFile := config[1]
-		//判断路径是否可用
-		fileInfo, err := os.Stat(fileDir)
-		if err != nil {
-			panic(err)
-		}
-		//判断文件路径是否是一个文件夹
-		if !fileInfo.IsDir() {
-			panic(fileDir + " is not a directory")
-		}
-		e.engine = createEngine(true,fileDir,indexFile)
+	if len(config) > 1 {
+		e.engine = createEngine(true,config...)
 	}
 	return e
 }
@@ -65,7 +54,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if engine.Check(e.RouteGroup) {
 		err = engine.Handle()
 	} else {
-		
+		e.Route404(cb)
 	}
 
 	if err != nil {
@@ -102,9 +91,9 @@ func (e *Engine) GzipOff() {
 	e.Gzip = false
 }
 
-//SetRout404 注册404回调方法
-func (e *Engine) SetRout404(fn HandlerFunc) {
-	e.Rout404 = fn
+//SetRoute404 注册404回调方法
+func (e *Engine) SetRoute404(fn HandlerFunc) {
+	e.Route404 = fn
 }
 
 //Run 启动一个HttpServer
