@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"fmt"
 )
 
 
@@ -32,7 +31,6 @@ type engine struct {
 	enableFile bool			//是否支持静态文件
 	baseDir  string       	//文件仓库地址
 	indexFilename string 	//默认文件
-	protocol string			//请求协议
 	method string			//请求方法
 	path   string			//请求地址		
 	cb     *Combination		//http复合体
@@ -68,14 +66,12 @@ func createEngine(eFile bool, config... string) *engine {
 //Init 引擎初始化
 //获取请求类型和请求路由 并保存
 func (e *engine) Init (c *Combination) IEngine {
-	protocol := c.GetProto()
 	method := c.GetMethod()
 	path := "/" + strings.Trim(c.GetPath(), "/")
 	
 	return &engine{
 		baseDir: e.baseDir,
 		enableFile: e.enableFile,
-		protocol: protocol,
 		cb:     c,
 		method: method,
 		path:   path,
@@ -88,7 +84,6 @@ func (e *engine) Init (c *Combination) IEngine {
 //保存路由中已经注册的业务方法
 func (e *engine) Check(i interface{}) bool {
 	//先进行文件判断
-	fmt.Println(e.enableFile)
 	if e.enableFile {
 		filename := strings.Trim(e.cb.GetPath(), "/")
 		//http包内的文件服务函数 会针对index.html做301
@@ -101,7 +96,6 @@ func (e *engine) Check(i interface{}) bool {
 			filename = e.indexFilename
 		}
 		filePath := path.Clean(e.baseDir + filename)
-		fmt.Println(filePath)
 		//获取文件/文件夹信息
 		file, err := os.Stat(filePath)
 		//如果存在 则判断是否是文件夹
@@ -112,7 +106,13 @@ func (e *engine) Check(i interface{}) bool {
 		}
 	}
 	if rtg, ok := i.(*RouteGroup); ok {
-		Handler, err := rtg.Get(e.method, e.path)
+		method := ""
+		if e.cb.Request.Header.Get("Upgrade") == "websocket" {
+			method = MethodWs
+		}else {
+			method = e.method
+		}
+		Handler, err := rtg.Get(method, e.path)
 		if err == nil {
 			e.cb.handlerChain.add(Handler)
 			return true
