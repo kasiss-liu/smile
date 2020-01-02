@@ -49,9 +49,13 @@ func main() {
 	//注册路由
 	routeGroup := smile.NewRouteGroup()
 	routeGroup.SetWS("ws", websocketFunc)
+	routeGroup.SetMiddleware(func(cb *smile.Combination) error{
+		fmt.Println("testing "+ cb.Request.URL.Path)
+		cb.Next()
+		return nil
+	})
 	engine.SetRouteGroup(routeGroup)
 	//注册监视器
-	smile.MonitorOn()
 	engine.GzipOn()
 	engine.Run(":8000")
 }

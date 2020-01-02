@@ -53,6 +53,9 @@ type RouteGroup struct {
 	routeAutoCreateFnameList map[string]fnameList //自动注册路由->方法名列表
 	autoFilling              bool                 //是否在自动生成路由
 	autoFillLock             sync.Mutex
+	route404				 HandlerFunc
+	routeMiddleware 		 []HandlerFunc
+
 }
 
 //initRouteFnameList  初始化注册路由对应的执行方法名称
@@ -170,6 +173,8 @@ func NewRouteGroup() *RouteGroup {
 	r.DELETE = make(map[string]HandlerFunc, 10)
 	r.SetPathStyleConnector()
 	r.initRouteFnameList()
+	r.route404 = defaultRoute404()
+	r.routeMiddleware = make([]HandlerFunc,0,5)
 	return r
 }
 
@@ -320,4 +325,24 @@ func (rg *RouteGroup) formatRoutes(rglist map[string]fnameList) []string {
 		rs = append(rs, s)
 	}
 	return rs
+}
+
+func defaultRoute404() HandlerFunc {
+	return func(cb *Combination) error {
+		cb.Header().Add("Content-Type", "text/html;charset=utf-8;")
+		cb.WriteHeader(404)
+		str := fmt.Sprintf("{\"path\":\"%s\",\"status\":\"404\",\"message\":\"not found\"}", cb.Request.URL.Path)
+		_, err := cb.WriteString(str)
+		return err
+	}
+}
+
+//SetRoute404 注册404回调方法
+func (rg *RouteGroup) SetRoute404(fn HandlerFunc) {
+	rg.route404 = fn
+}
+
+//SetMiddleware 注册中间件
+func (rg *RouteGroup) SetMiddleware(fn HandlerFunc) {
+	rg.routeMiddleware = append(rg.routeMiddleware,fn)
 }

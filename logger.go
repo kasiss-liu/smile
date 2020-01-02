@@ -11,8 +11,8 @@ import (
 
 //ILogger 日志处理
 type ILogger interface {
-	Write(io.Writer, string)
-	Log(*Combination)
+	Write(io.Writer, string) (int, error)
+	Log(*Combination) error
 }
 
 //注册基本的terminal颜色
@@ -45,8 +45,8 @@ type Logger struct {
 var _ ILogger = &Logger{}
 
 //logger写方法 向一个io内写入数据
-func (l *Logger) Write(w io.Writer, s string) {
-	fmt.Fprintln(w, s)
+func (l *Logger) Write(w io.Writer, s string) (int, error) {
+	return fmt.Fprintln(w, s)
 }
 
 //TermOn 开启终端输出（数据染色）
@@ -61,7 +61,7 @@ func (l *Logger) TermOff() {
 
 //Log 方法
 //整理需要log的数据拼接后进行输出
-func (l *Logger) Log(c *Combination) {
+func (l *Logger) Log(c *Combination) error {
 
 	statusCode := c.ResponseWriter.Status()   //请求响应状态
 	prefix := prefixForStatus(statusCode)     //日志前缀
@@ -79,7 +79,8 @@ func (l *Logger) Log(c *Combination) {
 	//将准备的数据进行拼接
 	s := l.joinLog(prefix, path, statusCode, statusColor, clientIP, method, methodColor)
 	//数据写入
-	l.Write(l.Writer, s)
+	_, err := l.Write(l.Writer, s)
+	return err
 }
 
 //拼接日志字符串

@@ -10,7 +10,6 @@ import (
 	"strings"
 )
 
-
 //IEngine 一个引擎接口
 type IEngine interface {
 	Init(*Combination) IEngine //初始化引擎
@@ -25,26 +24,26 @@ var DefaultFile = "index.html"
 //httpExceptFile http包内的文件服务函数 会针对index.html做301
 const httpExceptFile = "index.html"
 
-//Engine 请求处理引擎
+//ctxEngine 请求处理引擎
 //业务处理的相关处理引擎
-type engine struct {
-	enableFile bool			//是否支持静态文件
-	baseDir  string       	//文件仓库地址
-	indexFilename string 	//默认文件
-	method string			//请求方法
-	path   string			//请求地址		
-	cb     *Combination		//http复合体
+type ctxEngine struct {
+	enableFile    bool         //是否支持静态文件
+	baseDir       string       //文件仓库地址
+	indexFilename string       //默认文件
+	method        string       //请求方法
+	path          string       //请求地址
+	cb            *Combination //http复合体
 }
 
-func createEngine(eFile bool, config... string) *engine {
-	e := &engine{}
+func createEngine(eFile bool, config ...string) *ctxEngine {
+	e := &ctxEngine{}
 	e.enableFile = eFile
 	if eFile {
 		if len(config) > 1 {
 			e.baseDir = config[0]
 			if len(config) == 1 {
 				e.indexFilename = DefaultFile
-			}else{
+			} else {
 				e.indexFilename = config[1]
 			}
 			//判断路径是否可用
@@ -56,7 +55,7 @@ func createEngine(eFile bool, config... string) *engine {
 			if !fileInfo.IsDir() {
 				panic(e.baseDir + " is not a directory")
 			}
-		}else{
+		} else {
 			e.enableFile = false
 		}
 	}
@@ -65,16 +64,16 @@ func createEngine(eFile bool, config... string) *engine {
 
 //Init 引擎初始化
 //获取请求类型和请求路由 并保存
-func (e *engine) Init (c *Combination) IEngine {
+func (e *ctxEngine) Init(c *Combination) IEngine {
 	method := c.GetMethod()
 	path := "/" + strings.Trim(c.GetPath(), "/")
-	
-	return &engine{
-		baseDir: e.baseDir,
+
+	return &ctxEngine{
+		baseDir:    e.baseDir,
 		enableFile: e.enableFile,
-		cb:     c,
-		method: method,
-		path:   path,
+		cb:         c,
+		method:     method,
+		path:       path,
 	}
 
 }
@@ -82,7 +81,9 @@ func (e *engine) Init (c *Combination) IEngine {
 //Check 在路由列表中判断 动态请求路由是否已经注册
 //如果已经注册 则本次请求由动态引擎处理
 //保存路由中已经注册的业务方法
-func (e *engine) Check(i interface{}) bool {
+func (e *ctxEngine) Check(i interface{}) bool {
+	var fn HandlerFunc 
+	rtg := i.(*RouteGroup)
 	//先进行文件判断
 	if e.enableFile {
 		filename := strings.Trim(e.cb.GetPath(), "/")
@@ -101,27 +102,35 @@ func (e *engine) Check(i interface{}) bool {
 		//如果存在 则判断是否是文件夹
 		if err == nil && !file.IsDir() {
 			e.path = filePath
-			e.cb.handlerChain.add(e.serveFile)
-			return true
+			fn = e.serveFile
 		}
 	}
-	if rtg, ok := i.(*RouteGroup); ok {
-		method := ""
-		if e.cb.Request.Header.Get("Upgrade") == "websocket" {
-			method = MethodWs
-		}else {
-			method = e.method
+	if rtg != nil {
+		if fn == nil  {
+			method := ""
+			if e.cb.Request.Header.Get("Upgrade") == "websocket" {
+				method = MethodWs
+			} else {
+				method = e.method
+			}
+			Handler, err := rtg.Get(method, e.path)
+			if err == nil {
+				fn = Handler
+			}
 		}
-		Handler, err := rtg.Get(method, e.path)
-		if err == nil {
-			e.cb.handlerChain.add(Handler)
-			return true
+		if fn == nil {
+			fn = rtg.route404
+		}
+		//加载所有路由
+		for _,f := range rtg.routeMiddleware {
+			e.cb.handlerChain.add(f)
 		}
 	}
-	return false
+	e.cb.handlerChain.add(fn)
+	return true
 }
 
-func (e *engine) serveFile(c *Combination) error {
+func (e *ctxEngine) serveFile(c *Combination) error {
 	//调用http包输出文件的方法
 	http.ServeFile(c.ResponseWriter, c.Request, e.path)
 	return nil
@@ -129,13 +138,13 @@ func (e *engine) serveFile(c *Combination) error {
 
 //Handle 执行已经保存的业务方法
 //暂时不做错误返回处理
-func (e *engine) Handle() (err error) {
+func (e *ctxEngine) Handle() (err error) {
 	defer doRecover(&err, e.cb)
 	err = e.cb.handlerChain.next(e.cb)
-	return 
+	return
 }
 
 //GetType 获取引擎结构类型
-func (e *engine) GetType() string {
+func (e *ctxEngine) GetType() string {
 	return "ContextEngine"
 }
