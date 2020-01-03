@@ -105,3 +105,15 @@ func TestFormatRouteGroup(t *testing.T) {
 	t.Logf("%#v\n%#v\n", rsAssign, rsAuto)
 	doPrintRoutes(rsAssign, rsAuto)
 }
+
+func TestSetRouteFuncs(t *testing.T) {
+	rg := NewRouteGroup()
+	rg.SetRoute404(func(cb *Combination) error {
+		t.Log("testing route404")
+		return nil
+	})
+	rg.SetMiddleware(func(cb *Combination) error {
+		t.Log("testing middleware")
+		return nil
+	})
+}

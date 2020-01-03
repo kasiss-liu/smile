@@ -1,7 +1,6 @@
 package smile
 
 import (
-	"fmt"
 	"net/http/httptest"
 	"testing"
 )
@@ -28,9 +27,9 @@ func TestDoRecover(t *testing.T) {
 	if engine.Check(rg) {
 		err := engine.Handle()
 		if err != nil {
-			fmt.Println("handleErr:", err.Error())
+			t.Log("handleErr:", err.Error())
 		} else {
-			fmt.Println("success")
+			t.Log("success")
 		}
 	}
 }

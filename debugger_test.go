@@ -2,7 +2,6 @@ package smile
 
 import (
 	"errors"
-	"fmt"
 	"net/http/httptest"
 	"testing"
 )
@@ -24,7 +23,7 @@ func TestDoDebugger(t *testing.T) {
 		if err != nil {
 			doDebug(err, c)
 		} else {
-			fmt.Println("success")
+			t.Log("success")
 		}
 	}
 

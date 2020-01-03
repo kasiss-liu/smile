@@ -2,7 +2,6 @@ package smile
 
 import (
 	"compress/gzip"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -37,38 +36,42 @@ func TestCombination(t *testing.T) {
 	c := InitCombination(w, r, e)
 
 	ip := c.GetClientIP()
-	fmt.Println("IP:", ip)
+	t.Log("IP:", ip)
 	cookie, _ := c.GetCookie("testing")
-	fmt.Println("cookie:", cookie)
+	t.Log("cookie:", cookie)
 	header := c.GetHeader()
-	fmt.Println("header:", header)
+	t.Log("header:", header)
 	schema := c.GetScheme()
-	fmt.Println("schema:", schema)
+	t.Log("schema:", schema)
 	proto := c.GetProto()
-	fmt.Println("proto:", proto)
+	t.Log("proto:", proto)
 	uri := c.GetURL()
-	fmt.Println("url:", uri)
+	t.Log("url:", uri)
 	host := c.GetHost()
-	fmt.Println("host", host)
+	t.Log("host", host)
 	method := c.GetMethod()
-	fmt.Println("method:", method)
+	t.Log("method:", method)
 	path := c.GetPath()
-	fmt.Println("path", path)
+	t.Log("path", path)
 	postKey := c.GetPostParam("test")
-	fmt.Println("postKey-test:", postKey)
+	t.Log("postKey-test:", postKey)
 	postParams := c.GetMultipartFormParam("key1")
-	fmt.Println("postParams-key1:", postParams)
+	t.Log("postParams-key1:", postParams)
 	postFile := c.GetMultipartFormFile("key1")
-	fmt.Println("post-Fil:", postFile)
+	t.Log("post-Fil:", postFile)
 	id := c.GetQueryParam("id")
-	fmt.Println("queryParam-id:", id)
+	t.Log("queryParam-id:", id)
 	queryS := c.GetQueryString()
-	fmt.Println("queryString:", queryS)
+	t.Log("queryString:", queryS)
 
 	ua := c.GetUserAgent()
-	fmt.Println("ua:", ua)
+	t.Log("ua:", ua)
 	rb := c.GetRawBody()
-	fmt.Println("rb:", rb)
+	t.Log("rb:", rb)
+
+	c.WriteString("testing string")
+	c.Flush()
+	c.Done()
 
 	c.SetHeader("resp", "testSetHeader")
 	c.SetCookie(&http.Cookie{
@@ -82,16 +85,15 @@ func TestCombination(t *testing.T) {
 
 }
 
-
 func TestHandlerChain(t *testing.T) {
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("GET", "http://localhost/test?id=1",nil)
-	
-	c := InitCombination(w,r,Default())
+	r := httptest.NewRequest("GET", "http://localhost/test?id=1", nil)
+
+	c := InitCombination(w, r, Default())
 	hc := newHanlderChain()
-	n := 1;
-	for i:=1;i<6;i++ {
+	n := 1
+	for i := 1; i < 6; i++ {
 		hc.add(func(c *Combination) error {
 			logi := n
 			t.Log(logi)
@@ -103,11 +105,12 @@ func TestHandlerChain(t *testing.T) {
 		})
 	}
 	c.handlerChain = hc
-	
-	if err := c.Next();err != nil {
+
+	if err := c.Next(); err != nil {
 		t.Error(err.Error())
 	}
-	if err := hc.next(c);err != nil {
+	hc.reset()
+	if err := hc.next(c); err != nil {
 		t.Error(err.Error())
 	}
 }

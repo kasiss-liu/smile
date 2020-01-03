@@ -1,7 +1,6 @@
 package smile
 
 import (
-	"fmt"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -54,13 +53,15 @@ func TestSmile(t *testing.T) {
 	req = httptest.NewRequest("POST", "http://localhost:9999/func", nil)
 	e.ServeHTTP(resp, req)
 	LogOFF()
-	fmt.Println("------log Off -----")
+	t.Log("------log Off -----")
 	req = httptest.NewRequest("WS", "http://localhost:9999/func", nil)
 	e.ServeHTTP(resp, req)
 	LogON()
-	fmt.Println("------log On -----")
+	t.Log("------log On -----")
 	req = httptest.NewRequest("PUT", "http://localhost:9999/test", nil)
 	e.ServeHTTP(resp, req)
+	t.Log("------ errors -----")
+	t.Log(e.GetErrors())
 
 }
 
@@ -85,4 +86,5 @@ func TestMode(t *testing.T) {
 	if mode != ModePRO {
 		t.Error("SetPRODUCTION failed")
 	}
+	t.Log(Mode())
 }
