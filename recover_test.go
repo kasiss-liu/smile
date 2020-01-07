@@ -1,7 +1,6 @@
 package smile
 
 import (
-	"fmt"
 	"net/http/httptest"
 	"testing"
 )
@@ -23,14 +22,14 @@ func TestDoRecover(t *testing.T) {
 	r := httptest.NewRequest("", "/test_recover", nil)
 	c := InitCombination(w, r, Default())
 
-	e := &DynamicEngine{}
+	e := createEngine(false)
 	engine := e.Init(c)
 	if engine.Check(rg) {
 		err := engine.Handle()
 		if err != nil {
-			fmt.Println("handleErr:", err.Error())
+			t.Log("handleErr:", err.Error())
 		} else {
-			fmt.Println("success")
+			t.Log("success")
 		}
 	}
 }

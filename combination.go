@@ -4,6 +4,7 @@ package smile
 
 import (
 	"compress/gzip"
+	"errors"
 	"io/ioutil"
 	"mime/multipart"
 	"net"
@@ -11,9 +12,70 @@ import (
 	"strings"
 )
 
+//handlerChain 请求方法调用链
+type handlerChain struct {
+	current int 
+	handlerList []HandlerFunc
+	aborted  bool
+}
+
+func (hc *handlerChain) add(fn HandlerFunc) {
+	hc.handlerList = append(hc.handlerList,fn)
+}
+
+func (hc *handlerChain) next(cb *Combination) (err error) {
+
+	defer func(){
+		if hc.current >= len(hc.handlerList) {
+			hc.abort()
+		}
+	}()
+
+	err = errors.New("HanlderChain reached end")
+
+	if hc.current < len(hc.handlerList) {	
+		if fn := hc.handlerList[hc.current];fn != nil  {
+			hc.current++
+			if !hc.aborted {
+				err = fn(cb)
+				if err == nil {
+					hc.next(cb)
+				}
+			}else {
+				err = nil;
+			}
+			return
+		}
+	}
+	return
+}
+
+func (hc *handlerChain) reset() {
+	hc.aborted = false
+	hc.current = 0
+}
+func (hc *handlerChain) isAorted() bool {
+	return hc.aborted
+}
+
+func (hc *handlerChain) abort() {
+	hc.aborted = true
+}
+
+func newHanlderChain() *handlerChain {
+	return &handlerChain{
+		0,
+		make([]HandlerFunc,0,5),
+		false,
+	}
+}
+
+
+
 //Combination 一个复合结构，将writer和 request保存到一起，方便被调用
 //实现了一些便捷方法 从而缩短获取数据的路径长度
 type Combination struct {
+	handlerChain *handlerChain
 	ResponseWriter
 	Request *http.Request
 }
@@ -56,7 +118,10 @@ func InitCombination(w http.ResponseWriter, r *http.Request, e *Engine) *Combina
 	//解析传参数据
 	r.ParseForm()
 	r.ParseMultipartForm(FileSize)
-	return &Combination{writer, r}
+	cb := &Combination{ResponseWriter:writer, Request: r,handlerChain: newHanlderChain()}
+	//初始化中间件
+
+	return cb
 }
 
 //GetURL 获取请求的URL
@@ -204,4 +269,17 @@ func (c *Combination) Redirect(url string) {
 	c.WriteHeader(http.StatusFound)
 	c.Header().Set("Location", url)
 	c.Done()
+}
+
+//Next 执行注册请求
+func (c *Combination) Next() error {
+	if !c.handlerChain.isAorted() {
+		return c.handlerChain.next(c)
+	}
+	return errors.New("Combination is aborted")
+}
+//Abort 调用中断执行 后续注册函数将不再执行
+func (c *Combination) Abort() bool {
+	c.handlerChain.abort()
+	return c.handlerChain.aborted
 }

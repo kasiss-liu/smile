@@ -2,7 +2,6 @@ package smile
 
 import (
 	"errors"
-	"fmt"
 	"net/http/httptest"
 	"testing"
 )
@@ -17,14 +16,14 @@ func TestDoDebugger(t *testing.T) {
 	r := httptest.NewRequest("", "/test_debug", nil)
 	c := InitCombination(w, r, Default())
 
-	e := &DynamicEngine{}
+	e := createEngine(false)
 	engine := e.Init(c)
 	if engine.Check(rg) {
 		err := engine.Handle()
 		if err != nil {
 			doDebug(err, c)
 		} else {
-			fmt.Println("success")
+			t.Log("success")
 		}
 	}
 

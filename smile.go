@@ -6,48 +6,35 @@ package smile
 import (
 	"net/http"
 	"os"
-	"time"
 )
 
 //Engine 一个服务器引擎
 type Engine struct {
-	RouteGroup    *RouteGroup
-	fileEngine    IEngine
-	dynamicEngine IEngine
-	wsEngine      IEngine
-	RunHandle     RunMonitor
-	Logger        ILogger
-	Gzip          bool
-	Rout404       HandlerFunc //注册时 404调用
+	RouteGroup 		*RouteGroup
+	engine     		IEngine
+	Logger     		ILogger
+	Gzip       		bool
 	//debug
-	Errors []error
+	Errors 			[]error
 }
 
 //Default 生成一个默认配置的服务器
 //有动态引擎和websocket引擎
 func Default() *Engine {
 	return &Engine{
-		dynamicEngine: &DynamicEngine{},
-		wsEngine:      &WsEngine{},
-		Logger:        &Logger{os.Stdout, true},
-		Gzip:          true,
-		RouteGroup:    new(RouteGroup),
+		engine:     createEngine(false),
+		Logger:     &Logger{os.Stdout, true},
+		Gzip:       true,
+		RouteGroup: new(RouteGroup),
 	}
 }
 
 //NewEngine 获取一个具有全部处理引擎的服务器
-func NewEngine(fileDir string) *Engine {
+func NewEngine(config ...string) *Engine {
 	e := Default()
-	//判断路径是否可用
-	fileInfo, err := os.Stat(fileDir)
-	if err != nil {
-		panic(err)
+	if len(config) > 1 {
+		e.engine = createEngine(true, config...)
 	}
-	//判断文件路径是否是一个文件夹
-	if !fileInfo.IsDir() {
-		panic(fileDir + " is not a directory")
-	}
-	e.fileEngine = &FileEngine{BaseDir: fileDir}
 	return e
 }
 
@@ -55,98 +42,28 @@ func NewEngine(fileDir string) *Engine {
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//初始化一个请求复合 包含了本次请求及响应的数据
-	combine := InitCombination(w, r, e)
+	cb := InitCombination(w, r, e)
+	defer cb.Close()
 
 	//初始化使用引擎
-	engine := e.initActEngine(combine)
-
-	var actType = ActType404
-
-	if engine != nil {
-		actType = engine.GetType()
-	}
-
-	//如果监控开关打开 并且注册了方法
-	//则在请求业务方法前后调用注册的start 和end 方法
-	if monitorSwitch && e.RunHandle != nil && actType != ActTypeFile {
-		e.RunHandle.HandleStart(&MonitorInfo{
-			time.Now(),
-			actType,
-			combine.GetPath(),
-			combine,
-		})
-	}
+	engine := e.engine.Init(cb)
 
 	var err error
-
-	if engine != nil {
-
-		err = engine.Handle()
-
-	} else {
-		//当请求的路由不在注册列表中时
-		//如果注册了Route404修复方法 则调用Route404
-		if e.Rout404 != nil && actType != ActTypeFile {
-			err = e.Rout404(combine)
-		}
-		combine.WriteHeader(http.StatusNotFound)
-		combine.Done()
-	}
-
-	if err != nil {
-		//debug
-		doDebug(err, combine)
-	}
-
-	//监控结束方法
-	if monitorSwitch && e.RunHandle != nil && actType != ActTypeFile {
-		e.RunHandle.HandleEnd(&MonitorInfo{
-			time.Now(),
-			actType,
-			combine.GetPath(),
-			combine,
-		})
-	}
+	//路由校验以及404处理
+	engine.Check(e.RouteGroup)
 
 	//如果已经注册了 并且日志开关开启
 	//则进行日志打印
 	if e.Logger != nil && logSwitch {
-		e.Logger.Log(combine)
+		cb.handlerChain.add(e.Logger.Log)
 	}
-	combine.Close()
-
-}
-
-//匹配本次请求的处理引擎
-func (e *Engine) initActEngine(c *Combination) (threadEngine IEngine) {
-
-	if e.wsEngine != nil {
-		threadEngine = e.wsEngine.Init(c)
-		if threadEngine.Check(e.RouteGroup) {
-			return
-		}
+	err = engine.Handle()
+	
+	if err != nil {
+		//debug
+		doDebug(err, cb)
 	}
 
-	if e.dynamicEngine != nil {
-		threadEngine = e.dynamicEngine.Init(c)
-		if threadEngine.Check(e.RouteGroup) {
-			return
-		}
-	}
-
-	if e.fileEngine != nil {
-		threadEngine = e.fileEngine.Init(c)
-		if threadEngine.Check(nil) {
-			return
-		}
-	}
-
-	return nil
-}
-
-//SetMonitor 注册一个监控器
-func (e *Engine) SetMonitor(m RunMonitor) {
-	e.RunHandle = m
 }
 
 //SetLoger 注册一个logger
@@ -169,9 +86,11 @@ func (e *Engine) GzipOff() {
 	e.Gzip = false
 }
 
-//SetRout404 注册404回调方法
-func (e *Engine) SetRout404(fn HandlerFunc) {
-	e.Rout404 = fn
+func (e *Engine) prepareRun() {
+	if !GetInitState() {
+		DoCustomInit()
+	}
+	doPrintRoutes(e.RouteGroup.FormatRoutes())
 }
 
 //Run 启动一个HttpServer
@@ -179,14 +98,8 @@ func (e *Engine) Run(port string) (err error) {
 
 	defer doRecover(&err, nil)
 
-	if !GetInitState() {
-		DoCustomInit()
-	}
-
-	if Mode() != ModePRO {
-		doPrintRoutes(e.RouteGroup.FormatRoutes())
-	}
-
+	e.prepareRun()
+	
 	err = http.ListenAndServe(port, e)
 	if err != nil {
 		e.Errors = append(e.Errors, err)
@@ -199,13 +112,7 @@ func (e *Engine) RunTLS(port, cert, key string) (err error) {
 
 	defer doRecover(&err, nil)
 
-	if !GetInitState() {
-		DoCustomInit()
-	}
-
-	if Mode() != ModePRO {
-		doPrintRoutes(e.RouteGroup.FormatRoutes())
-	}
+	e.prepareRun()
 
 	err = http.ListenAndServeTLS(port, cert, key, e)
 	if err != nil {

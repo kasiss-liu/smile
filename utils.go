@@ -20,12 +20,19 @@ func trimPath(path string) string {
 }
 
 func doPrintRoutes(routesAssign []string, routesAutoCreate []string) {
-	fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", "assigned:")
-	for _, v := range routesAssign {
-		fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", v)
+	if len(routesAssign) > 0{
+		fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", "assigned:")
+		for _, v := range routesAssign {
+			fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", v)
+		}
 	}
-	fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", "autocreated:")
-	for _, v := range routesAutoCreate {
-		fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", v)
+	if len(routesAutoCreate) > 0 {
+		fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", "autocreated:")
+		for _, v := range routesAutoCreate {
+			fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", v)
+		}
+	}
+	if len(routesAssign) == 0 && len(routesAutoCreate) == 0 {
+		fmt.Fprintf(os.Stdout, "[SMILE Route]%s\r\n", "No Route Registered!")
 	}
 }
