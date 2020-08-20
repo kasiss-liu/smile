@@ -9,7 +9,7 @@ import (
 const recoverPrefix = "Rocover panic: "
 
 // Recovery 定义外部panic处理函数，可用于覆盖默认值
-type Recovery func(*Combination, interface{}) error
+type Recovery func(*Context, interface{}) error
 
 // 储存一个处理panic的函数
 var recovery Recovery
@@ -21,7 +21,7 @@ func init() {
 
 // recover钩子 在engine调用handler时 会被defer触发
 // 调用注册的panic处理函数
-func doRecover(e *error, c *Combination) error {
+func doRecover(e *error, c *Context) error {
 	if r := recover(); r != nil {
 		*e = recovery(c, r)
 	}
@@ -29,7 +29,7 @@ func doRecover(e *error, c *Combination) error {
 }
 
 //默认panic处理函数
-func defaultRecover(c *Combination, rec interface{}) error {
+func defaultRecover(c *Context, rec interface{}) error {
 	c.WriteHeader(http.StatusInternalServerError)
 	s := fmt.Sprintf("%#v", rec)
 	return errors.New(recoverPrefix + s)

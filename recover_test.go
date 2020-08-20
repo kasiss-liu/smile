@@ -9,7 +9,7 @@ func init() {
 	rg.SetGET("test_recover", recoverFunc)
 }
 
-func recoverFunc(c *Combination) error {
+func recoverFunc(c *Context) error {
 	testRecover()
 	return nil
 }
@@ -20,7 +20,7 @@ func testRecover() {
 func TestDoRecover(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("", "/test_recover", nil)
-	c := InitCombination(w, r, Default())
+	c := initContext(w, r, Default())
 
 	e := createEngine(false)
 	engine := e.Init(c)

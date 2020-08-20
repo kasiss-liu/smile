@@ -22,7 +22,6 @@ type ResponseWriter interface {
 	http.ResponseWriter
 	http.Hijacker
 	http.Flusher
-	http.CloseNotifier
 	DataSize() int
 	Status() int
 	WriteString(string) (int, error)
@@ -111,12 +110,12 @@ func (w *responseWriter) Write(data []byte) (n int, err error) {
 //用来执行跳转 或者单纯的header设置
 func (w *responseWriter) Done() {
 	w.size = 0
-	w.Write([]byte(""))
+	_,_ = w.Write([]byte(""))
 }
 
 //直接写入字符串
 func (w *responseWriter) WriteString(data string) (n int, err error) {
-	w.Write([]byte(data))
+	n,_= w.Write([]byte(data))
 	w.size += n
 	return
 }

@@ -14,7 +14,7 @@ func init() {
 	rg.SetWS("test2", testHandle)
 }
 
-func testHandle(c *Combination) error {
+func testHandle(c *Context) error {
 
 	c.WriteHeader(200)
 	c.WriteString("hello world")
@@ -29,7 +29,7 @@ func testHandle(c *Combination) error {
 func TestFileEngine(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/websocket/index.html", nil)
-	c := InitCombination(w, r, Default())
+	c := initContext(w, r, Default())
 
 	e := createEngine(true, "./examples/","index.html")
 	engine := e.Init(c)
@@ -50,7 +50,7 @@ func TestDynamicEngine(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/test", nil)
-	c := InitCombination(w, r, Default())
+	c := initContext(w, r, Default())
 
 	e := createEngine(false)
 	engine := e.Init(c)
@@ -68,7 +68,7 @@ func TestWsEngine(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("WS", "/test2", nil)
-	c := InitCombination(w, r, Default())
+	c := initContext(w, r, Default())
 
 	e := createEngine(false)
 	engine := e.Init(c)

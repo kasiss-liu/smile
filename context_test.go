@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestCombination(t *testing.T) {
+func TestContext(t *testing.T) {
 	w := httptest.NewRecorder()
 	gz := gzip.NewWriter(w)
 	defer gz.Close()
@@ -33,7 +33,7 @@ func TestCombination(t *testing.T) {
 	})
 
 	e := Default()
-	c := InitCombination(w, r, e)
+	c := initContext(w, r, e)
 
 	ip := c.GetClientIP()
 	t.Log("IP:", ip)
@@ -90,11 +90,11 @@ func TestHandlerChain(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "http://localhost/test?id=1", nil)
 
-	c := InitCombination(w, r, Default())
-	hc := newHanlderChain()
+	c := initContext(w, r, Default())
+	hc := newHandlerChain()
 	n := 1
 	for i := 1; i < 6; i++ {
-		hc.add(func(c *Combination) error {
+		hc.add(func(c *Context) error {
 			logi := n
 			t.Log(logi)
 			if n == 2 {

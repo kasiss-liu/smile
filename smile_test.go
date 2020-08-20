@@ -8,17 +8,17 @@ import (
 
 type smileController struct{}
 
-func (t *smileController) PostFunc(c *Combination) error {
+func (t *smileController) PostFunc(c *Context) error {
 	c.WriteString("hello post")
 	return nil
 }
 
-func (t *smileController) GetFunc(c *Combination) error {
+func (t *smileController) GetFunc(c *Context) error {
 	c.WriteString("hello get")
 	return nil
 }
 
-func (t *smileController) WsFunc(c *Combination) error {
+func (t *smileController) WsFunc(c *Context) error {
 	c.WriteString("hello ws")
 	return nil
 }

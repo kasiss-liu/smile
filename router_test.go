@@ -9,7 +9,7 @@ import (
 
 type testFillController struct{}
 
-func (t *testFillController) Func(c *Combination) error {
+func (t *testFillController) Func(c *Context) error {
 	return nil
 }
 
@@ -34,17 +34,17 @@ func TestFillRoutes(t *testing.T) {
 //测试自动匹配前缀
 type testController struct{}
 
-func (t *testController) PostFunc(c *Combination) error {
+func (t *testController) PostFunc(c *Context) error {
 	c.WriteString("hello post")
 	return nil
 }
 
-func (t *testController) GetFuncTest(c *Combination) error {
+func (t *testController) GetFuncTest(c *Context) error {
 	c.WriteString("hello get")
 	return nil
 }
 
-func (t *testController) WsFunc(c *Combination) error {
+func (t *testController) WsFunc(c *Context) error {
 	c.WriteString("hello ws")
 	return nil
 }
@@ -80,7 +80,6 @@ func TestFillPrefixRoutes(t *testing.T) {
 	fn, err = rg.Get(MethodGet, "nilfunc")
 	if err == nil {
 		t.Errorf("%#v\n", rg)
-		t.Errorf(err.Error())
 	} else {
 		t.Log("success")
 	}
@@ -108,11 +107,11 @@ func TestFormatRouteGroup(t *testing.T) {
 
 func TestSetRouteFuncs(t *testing.T) {
 	rg := NewRouteGroup()
-	rg.SetRoute404(func(cb *Combination) error {
+	rg.SetRoute404(func(cb *Context) error {
 		t.Log("testing route404")
 		return nil
 	})
-	rg.SetMiddleware(func(cb *Combination) error {
+	rg.SetMiddleware(func(cb *Context) error {
 		t.Log("testing middleware")
 		return nil
 	})

@@ -42,7 +42,7 @@ func NewEngine(config ...string) *Engine {
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//初始化一个请求复合 包含了本次请求及响应的数据
-	cb := InitCombination(w, r, e)
+	cb := initContext(w, r, e)
 	defer cb.Close()
 
 	//初始化使用引擎

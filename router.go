@@ -14,7 +14,7 @@ import (
 )
 
 //HandlerFunc 定一个业务执行方法
-type HandlerFunc func(*Combination) error
+type HandlerFunc func(*Context) error
 
 //定义部分请求类型及其匹配式
 const (
@@ -195,7 +195,7 @@ func (rg *RouteGroup) FillRoutes(method string, prefix string, c interface{}) {
 		fnName := t.Method(i).Name
 		interf := v.Method(i).Interface()
 		set := true
-		if fn, ok := interf.(func(*Combination) error); ok {
+		if fn, ok := interf.(func(*Context) error); ok {
 			fnName = rg.transFnNameToPath(fnName)
 			path := strings.Trim(prefix+"/"+fnName, "/")
 			switch method {
@@ -250,7 +250,7 @@ func (rg *RouteGroup) PrefixFillRoutes(prefix string, c interface{}) {
 				fnName = strings.Replace(fnName, rexSubmatch[1], "", -1)
 			}
 		}
-		if fn, ok := interf.(func(*Combination) error); ok {
+		if fn, ok := interf.(func(*Context) error); ok {
 			//函数名称转化为请求路径path的全小写格式
 			fnName = rg.transFnNameToPath(fnName)
 			path := strings.Trim(prefix+"/"+fnName, "/")
@@ -328,7 +328,7 @@ func (rg *RouteGroup) formatRoutes(rglist map[string]fnameList) []string {
 }
 
 func defaultRoute404() HandlerFunc {
-	return func(cb *Combination) error {
+	return func(cb *Context) error {
 		cb.Header().Add("Content-Type", "text/html;charset=utf-8;")
 		cb.WriteHeader(404)
 		str := fmt.Sprintf("{\"path\":\"%s\",\"status\":\"404\",\"message\":\"not found\"}", cb.Request.URL.Path)

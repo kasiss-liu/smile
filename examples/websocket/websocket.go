@@ -1,3 +1,5 @@
+//+build !test
+
 package main
 
 import (
@@ -19,7 +21,7 @@ var upgrader = websocket.Upgrader{
 }
 
 //ws处理程序
-func websocketFunc(c *smile.Combination) error {
+func websocketFunc(c *smile.Context) error {
 	conn, err := upgrader.Upgrade(c.ResponseWriter, c.Request, nil)
 
 	if err != nil {
@@ -49,7 +51,7 @@ func main() {
 	//注册路由
 	routeGroup := smile.NewRouteGroup()
 	routeGroup.SetWS("ws", websocketFunc)
-	routeGroup.SetMiddleware(func(cb *smile.Combination) error{
+	routeGroup.SetMiddleware(func(cb *smile.Context) error{
 		fmt.Println("testing "+ cb.Request.URL.Path)
 		cb.Next()
 		return nil

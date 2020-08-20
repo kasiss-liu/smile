@@ -1,3 +1,5 @@
+//+build !test
+
 package main
 
 import (
@@ -7,7 +9,7 @@ import (
 )
 
 //实现一个测试路由方法
-func test(c *smile.Combination) error {
+func test(c *smile.Context) error {
 	fmt.Println("hello world")
 	c.WriteString("helo")
 	return nil

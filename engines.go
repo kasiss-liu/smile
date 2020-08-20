@@ -12,7 +12,7 @@ import (
 
 //IEngine 一个引擎接口
 type IEngine interface {
-	Init(*Combination) IEngine //初始化引擎
+	Init(*Context) IEngine //初始化引擎
 	Handle() error             //执行方法
 	Check(interface{}) bool    //判断是否属于引擎处理请求
 	GetType() string           //获取引擎结构类型
@@ -32,7 +32,7 @@ type ctxEngine struct {
 	indexFilename string       //默认文件
 	method        string       //请求方法
 	path          string       //请求地址
-	cb            *Combination //http复合体
+	cb            *Context //http复合体
 }
 
 func createEngine(eFile bool, config ...string) *ctxEngine {
@@ -64,16 +64,16 @@ func createEngine(eFile bool, config ...string) *ctxEngine {
 
 //Init 引擎初始化
 //获取请求类型和请求路由 并保存
-func (e *ctxEngine) Init(c *Combination) IEngine {
+func (e *ctxEngine) Init(c *Context) IEngine {
 	method := c.GetMethod()
-	path := "/" + strings.Trim(c.GetPath(), "/")
+	ppath := "/" + strings.Trim(c.GetPath(), "/")
 
 	return &ctxEngine{
 		baseDir:    e.baseDir,
 		enableFile: e.enableFile,
 		cb:         c,
 		method:     method,
-		path:       path,
+		path:       ppath,
 	}
 
 }
@@ -130,7 +130,7 @@ func (e *ctxEngine) Check(i interface{}) bool {
 	return true
 }
 
-func (e *ctxEngine) serveFile(c *Combination) error {
+func (e *ctxEngine) serveFile(c *Context) error {
 	//调用http包输出文件的方法
 	http.ServeFile(c.ResponseWriter, c.Request, e.path)
 	return nil

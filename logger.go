@@ -12,7 +12,7 @@ import (
 //ILogger 日志处理
 type ILogger interface {
 	Write(io.Writer, string) (int, error)
-	Log(*Combination) error
+	Log(*Context) error
 }
 
 //注册基本的terminal颜色
@@ -61,7 +61,7 @@ func (l *Logger) TermOff() {
 
 //Log 方法
 //整理需要log的数据拼接后进行输出
-func (l *Logger) Log(c *Combination) error {
+func (l *Logger) Log(c *Context) error {
 
 	statusCode := c.ResponseWriter.Status()   //请求响应状态
 	prefix := prefixForStatus(statusCode)     //日志前缀

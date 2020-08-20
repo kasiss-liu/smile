@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func debugFunc(c *Combination) error {
+func debugFunc(c *Context) error {
 	return errors.New("testing debug error catch")
 }
 
@@ -14,7 +14,7 @@ func TestDoDebugger(t *testing.T) {
 	rg.SetGET("/test_debug", debugFunc)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("", "/test_debug", nil)
-	c := InitCombination(w, r, Default())
+	c := initContext(w, r, Default())
 
 	e := createEngine(false)
 	engine := e.Init(c)

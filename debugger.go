@@ -9,7 +9,7 @@ import (
 )
 
 //Debugger 定义外部panic处理函数，可用于覆盖默认值
-type Debugger func(*Combination, error)
+type Debugger func(*Context, error)
 
 // 储存一个处理panic的函数
 var debugger Debugger
@@ -21,12 +21,12 @@ func init() {
 
 // debug钩子 handleFunc 返回error时被调用
 // 调用注册的error处理函数
-func doDebug(e error, c *Combination) {
+func doDebug(e error, c *Context) {
 	debugger(c, e)
 }
 
 //默认debug函数
-func defaultDebugger(cb *Combination, e error) {
+func defaultDebugger(cb *Context, e error) {
 	stack := debug.Stack()
 	fmt.Printf("[debug_log] error: %s\n", e.Error())
 	fmt.Printf("[debug_log] stacks: %s\n", string(stack))
